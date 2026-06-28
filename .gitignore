@@ -1,0 +1,48 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Operator-tool post-verify
+*.out
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw*
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Environment variables
+.env
+.env.*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads directory contents (but keep .gitkeep)
+uploads/*
+!uploads/.gitkeep
+
+# Build results
+/dist
+/bin
+
+# Test coverage reports
+coverage.out
