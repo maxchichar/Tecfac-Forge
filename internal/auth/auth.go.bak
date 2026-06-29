@@ -47,7 +47,7 @@ func CreateSession(db *sql.DB, adminUserID int64) (string, error) {
 // ValidateSession checks if the session token exists and hasn't expired.
 // If valid, it returns the associated AdminUser.
 // Returns nil if invalid or expired.
-func ValidateSession(db *sql.DB, sessionToken string) (*models.AdminUser, error) {
+func ValidateSession(db *sql.DB, sessionToken string) (*AdminUser, error) {
 	var adminID int64
 	var createdAt time.Time
 	var expiresAt time.Time
@@ -82,7 +82,7 @@ func ValidateSession(db *sql.DB, sessionToken string) (*models.AdminUser, error)
 		return nil, err
 	}
 
-	return &models.AdminUser{
+	return &AdminUser{
 		ID:         adminID,
 		Username:   username,
 		PasswordHash: passwordHash,
