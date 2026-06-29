@@ -101,10 +101,11 @@ func DeleteSession(db *sql.DB, sessionToken string) error {
 // Returns true if attempts are below the threshold.
 func CheckLoginAttempts(db *sql.DB, username string) (bool, error) {
 	var count int64
+	threshold := time.Now().Unix() - 15*60 // 15 minutes ago in Unix seconds
 	err := db.QueryRow(`
 		SELECT COUNT(*) FROM login_attempts
-		WHERE username = ? AND success = 0 AND attempted_at > datetime(?, '-15 minutes')
-	`, username, time.Now()).Scan(&count)
+		WHERE username = ? AND success = 0 AND attempted_at > ?
+	`, username, threshold).Scan(&count)
 	if err != nil {
 		return false, err
 	}
@@ -116,6 +117,6 @@ func RecordLoginAttempt(db *sql.DB, username string, success bool) error {
 	_, err := db.Exec(`
 		INSERT INTO login_attempts (username, attempted_at, success)
 		VALUES (?, ?, ?)
-	`, username, time.Now(), success)
+	`, username, time.Now().Unix(), success)
 	return err
 }

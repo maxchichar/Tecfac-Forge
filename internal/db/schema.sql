@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE TABLE IF NOT EXISTS login_attempts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
-    attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    attempted_at INTEGER NOT NULL, -- Unix timestamp (seconds)
     success BOOLEAN NOT NULL
 );
 
