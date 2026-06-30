@@ -161,7 +161,8 @@ func main() {
 		sessionToken, err := r.Cookie("session_token")
 		if err != nil {
 			// No cookie, just redirect to login
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			w.Header().Set("HX-Redirect", "/login")
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
@@ -181,7 +182,8 @@ func main() {
 		http.SetCookie(w, cookie)
 
 		// Redirect to login page
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		w.Header().Set("HX-Redirect", "/login")
+		w.WriteHeader(http.StatusOK)
 	})
 
 	// Start server
