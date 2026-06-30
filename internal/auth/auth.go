@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
+	"log"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -37,10 +38,20 @@ func CreateSession(db *sql.DB, adminUserID int64) (string, error) {
 	now := time.Now()
 	expiresAt := now.Add(7 * 24 * time.Hour)
 
-	_, err := db.Exec(
+	res, err := db.Exec(
 		"INSERT INTO sessions (id, admin_user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
 		token, adminUserID, now, expiresAt,
 	)
+	if err != nil {
+		log.Printf("CreateSession insert error: %v", err)
+		return "", err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("CreateSession RowsAffected error: %v", err)
+	} else {
+		log.Printf("CreateSession inserted token %q, rows affected: %d", token, rowsAffected)
+	}
 	return token, err
 }
 
