@@ -1,3 +1,8 @@
 {
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/(app)/workspace/page": "app/(app)/workspace/page.js",
+  "/(app)/bookmarks/page": "app/(app)/bookmarks/page.js",
+  "/(app)/notes/page": "app/(app)/notes/page.js",
+  "/(app)/profile/page": "app/(app)/profile/page.js",
+  "/(app)/roadmap/page": "app/(app)/roadmap/page.js"
 }
