@@ -1,0 +1,12 @@
+{
+  "/api/auth/[...all]/route": "app/api/auth/[...all]/route.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/(app)/lesson/[slug]/page": "app/(app)/lesson/[slug]/page.js",
+  "/(app)/course/[slug]/page": "app/(app)/course/[slug]/page.js",
+  "/(app)/dashboard/page": "app/(app)/dashboard/page.js",
+  "/(app)/roadmap/page": "app/(app)/roadmap/page.js",
+  "/(app)/workspace/page": "app/(app)/workspace/page.js",
+  "/(app)/project/[slug]/page": "app/(app)/project/[slug]/page.js",
+  "/(app)/notes/page": "app/(app)/notes/page.js"
+}

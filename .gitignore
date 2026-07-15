@@ -46,3 +46,4 @@ uploads/*
 
 # Test coverage reports
 coverage.out
+node_modules
