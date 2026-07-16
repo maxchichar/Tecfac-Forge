@@ -1,7 +1,25 @@
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Navbar } from "@/components/layout/Navbar";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+async function shouldRedirectToLogin() {
+  try {
+    const { auth } = await import("@/auth/auth");
+    const session = await auth.api.getSession({ headers: await headers() });
+    return !session;
+  } catch {
+    // DATABASE_URL / Prisma not configured yet — stay in mock-data mode
+    // rather than lock people out. See README "What's real vs. mocked".
+    return false;
+  }
+}
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  if (await shouldRedirectToLogin()) {
+    redirect("/login");
+  }
+
   return (
     <div className="flex min-h-screen bg-[var(--color-bg)]">
       <Sidebar />

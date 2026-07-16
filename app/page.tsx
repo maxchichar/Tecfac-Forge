@@ -33,7 +33,7 @@ const PILLARS = [
   {
     icon: Sparkles,
     title: "AI Tutor",
-    body: "Context-aware on your current lesson, your prior progress, and your notes not a generic chatbot in a sidebar.",
+    body: "Context-aware on your current lesson, your prior progress, and your notes — not a generic chatbot in a sidebar.",
   },
   {
     icon: TrendingUp,
@@ -126,7 +126,7 @@ export default function LandingPage() {
                 <div className="mt-4 flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] px-3 py-2">
                   <Sparkles className="h-3.5 w-3.5 text-[var(--color-accent-solid)]" />
                   <p className="text-[11px] text-[var(--color-accent-solid)]">
-                    AI Tutor: "Copy types never move, want a quiz on this?"
+                    AI Tutor: "Copy types never move — want a quiz on this?"
                   </p>
                 </div>
               </div>
@@ -191,7 +191,7 @@ export default function LandingPage() {
           <Target className="h-6 w-6 text-[var(--color-accent-solid)]" />
           <h2 className="mt-4 text-2xl font-semibold tracking-tight">Import your first course today</h2>
           <p className="mt-2 max-w-md text-sm text-[var(--color-text-secondary)]">
-            The Odin Project, the Rust Book, or your own company's internal docs, start with what you're already reading.
+            The Odin Project, the Rust Book, or your own company's internal docs — start with what you're already reading.
           </p>
           <Link href="/login">
             <Button size="lg" className="mt-6">
@@ -207,7 +207,7 @@ export default function LandingPage() {
           <div className="flex gap-5 text-xs text-[var(--color-text-tertiary)]">
             <Link href="#">Privacy</Link>
             <Link href="#">Terms</Link>
-            <Link href="https://github.com/maxchichar">GitHub</Link>
+            <Link href="#">GitHub</Link>
           </div>
         </div>
       </footer>

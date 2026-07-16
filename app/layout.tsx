@@ -3,7 +3,7 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Tecfac Forge, Turning documentation into a learning experience",
+  title: "Tecfac Forge — Turn documentation into a learning experience",
   description:
     "Import a GitHub repository, a docs site, or a course, and Tecfac Forge turns it into structured lessons, projects, and an AI tutor that knows exactly where you are.",
 };
