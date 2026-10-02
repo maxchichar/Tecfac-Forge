@@ -1,29 +1,12 @@
-import { NotebookPen } from "lucide-react";
-import { notes } from "@/lib/mock-data";
-import { Card } from "@/components/ui/Card";
-
-export default function NotesPage() {
-  return (
-    <div className="mx-auto max-w-3xl">
-      <div className="flex items-center gap-2">
-        <NotebookPen className="h-5 w-5 text-[var(--color-text-tertiary)]" />
-        <h1 className="text-2xl font-semibold tracking-tight">Notes</h1>
-      </div>
-      <p className="mt-1 text-sm text-[var(--color-text-tertiary)]">
-        Example notes. Personal note saving is not available yet; lesson scratchpads are temporary.
-      </p>
-
-      <div className="mt-6 space-y-3">
-        {notes.map((n) => (
-          <Card key={n.id} className="p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-[13.5px] font-medium">{n.lessonTitle}</p>
-              <span className="text-xs text-[var(--color-text-tertiary)]">{n.courseTitle}</span>
-            </div>
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{n.content}</p>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
+import Link from "next/link";
+import { headers } from "next/headers";
+import { getSessionState } from "@/lib/server/session";
+import { getPersonalNotes } from "@/lib/server/library";
+export default async function NotesPage() {
+ const session = await getSessionState(await headers());
+ if (session.kind !== "ok") return null;
+ const items = await getPersonalNotes(session.userId);
+ return <div className="mx-auto max-w-3xl"><span className="forge-eyebrow">Personal library</span><h1 className="text-3xl font-semibold mt-2">Your learning notes</h1><p className="mt-2 text-[var(--color-text-secondary)]">Capture explanations, discoveries, and questions as you work.</p>
+ {items.length === 0 ? <div className="forge-empty mt-8"><h2>Nothing saved yet.</h2><p>Save a note or bookmark while reading a source to find it here.</p><Link className="forge-primary-link" href="/workspace">Explore your sources</Link></div> : <div className="mt-8 space-y-4">{items.map(item => item.lesson && <article key={item.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"><Link className="font-medium underline underline-offset-4" href={`/lesson/${item.lesson.slug}#personal-notes`}>{item.lesson.title}</Link><p className="text-xs mt-1 text-[var(--color-text-tertiary)]">{item.lesson.module.course.title}</p><p className="mt-3 text-sm whitespace-pre-wrap break-words text-[var(--color-text-secondary)]">{item.content}</p></article>)}</div>}
+ </div>;
 }

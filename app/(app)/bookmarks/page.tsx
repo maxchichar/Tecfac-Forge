@@ -1,38 +1,12 @@
 import Link from "next/link";
-import { Bookmark as BookmarkIcon, FileText, FolderKanban, Hash } from "lucide-react";
-import { bookmarks } from "@/lib/mock-data";
-import { Card } from "@/components/ui/Card";
-
-const ICONS = { lesson: FileText, project: FolderKanban, section: Hash } as const;
-
-export default function BookmarksPage() {
-  return (
-    <div className="mx-auto max-w-3xl">
-      <div className="flex items-center gap-2">
-        <BookmarkIcon className="h-5 w-5 text-[var(--color-text-tertiary)]" />
-        <h1 className="text-2xl font-semibold tracking-tight">Bookmarks</h1>
-      </div>
-
-      <p className="forge-example-notice mt-4">Example bookmarks. Saving personal bookmarks is not available yet.</p>
-      <div className="mt-6 space-y-3">
-        {bookmarks.filter((b) => b.type !== "project").map((b) => {
-          const Icon = ICONS[b.type];
-          return (
-            <Link key={b.id} href={b.href}>
-              <Card className="flex items-center gap-3 p-4 transition-colors hover:bg-[var(--color-surface-hover)]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-surface-hover)]">
-                  <Icon className="h-4 w-4 text-[var(--color-text-secondary)]" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13.5px] font-medium">{b.title}</p>
-                  <p className="text-xs text-[var(--color-text-tertiary)]">{b.courseTitle}</p>
-                </div>
-                <span className="shrink-0 text-xs capitalize text-[var(--color-text-tertiary)]">{b.type}</span>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
+import { headers } from "next/headers";
+import { getSessionState } from "@/lib/server/session";
+import { getPersonalBookmarks } from "@/lib/server/library";
+export default async function BookmarksPage() {
+ const session = await getSessionState(await headers());
+ if (session.kind !== "ok") return null;
+ const items = await getPersonalBookmarks(session.userId);
+ return <div className="mx-auto max-w-3xl"><span className="forge-eyebrow">Personal library</span><h1 className="text-3xl font-semibold mt-2">Your saved sources</h1><p className="mt-2 text-[var(--color-text-secondary)]">Return to the references you want to build with.</p>
+ {items.length === 0 ? <div className="forge-empty mt-8"><h2>Nothing saved yet.</h2><p>Save a note or bookmark while reading a source to find it here.</p><Link className="forge-primary-link" href="/workspace">Explore your sources</Link></div> : <div className="mt-8 space-y-4">{items.map(item => item.lesson && <article key={item.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"><Link className="font-medium underline underline-offset-4" href={`/lesson/${item.lesson.slug}#personal-notes`}>{item.lesson.title}</Link><p className="text-xs mt-1 text-[var(--color-text-tertiary)]">{item.lesson.module.course.title}</p></article>)}</div>}
+ </div>;
 }

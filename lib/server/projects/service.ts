@@ -14,7 +14,7 @@ const membership = (userId: string) => ({ workspace: { members: { some: { userId
 async function transaction<T>(work: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
-      return await prisma.$transaction(work, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      return await prisma.$transaction(work, { timeout: 20_000, maxWait: 15_000, isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034" && attempt < 2) continue;
       throw error;

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { ArrowLeft, ArrowRight, Clock } from "lucide-react";
-import { getLessonBySlug, getAdjacentLessons, courses } from "@/lib/mock-data";
+import { getLessonLibrary } from "@/lib/server/library";
 import { getSessionState } from "@/lib/server/session";
 import { getAuthorizedLessonBySlug } from "@/lib/server/lessons";
 import { renderMarkdown, extractToc } from "@/lib/markdown";
@@ -23,43 +23,9 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
   // 1. Check PostgreSQL database first
   const dbLesson = userId ? await getAuthorizedLessonBySlug(userId, slug) : null;
 
-  // 2. Fall back to mock data if not in database
-  const mockLesson = !dbLesson ? getLessonBySlug(slug) : null;
-
-  if (!dbLesson && !mockLesson) notFound();
-
-  const lesson = dbLesson
-    ? {
-        id: dbLesson.id,
-        title: dbLesson.title,
-        slug: dbLesson.slug,
-        markdown: dbLesson.markdown,
-        estimatedMinutes: dbLesson.estimatedMinutes,
-        difficulty: dbLesson.difficulty,
-        completed: dbLesson.completed,
-        courseTitle: dbLesson.course.title,
-        courseSlug: dbLesson.course.slug,
-        prev: dbLesson.prev,
-        next: dbLesson.next,
-      }
-    : (() => {
-        const m = mockLesson!;
-        const course = courses.find((c) => c.id === m.courseId);
-        const { prev, next } = getAdjacentLessons(m.id);
-        return {
-          id: m.id,
-          title: m.title,
-          slug: m.slug,
-          markdown: m.markdown,
-          estimatedMinutes: m.estimatedMinutes,
-          difficulty: m.difficulty,
-          completed: m.completed,
-          courseTitle: course?.title ?? "",
-          courseSlug: course?.slug ?? "",
-          prev: prev ? { slug: prev.slug, title: prev.title } : null,
-          next: next ? { slug: next.slug, title: next.title } : null,
-        };
-      })();
+  if (!dbLesson) notFound();
+  const library = await getLessonLibrary(userId, dbLesson.id);
+  const lesson = { ...dbLesson, courseTitle: dbLesson.course.title, courseSlug: dbLesson.course.slug };
 
   const html = await renderMarkdown(lesson.markdown);
   const toc = extractToc(lesson.markdown);
@@ -67,7 +33,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
   return (
     <div className="forge-lesson-layout">
       <div className="min-w-0">
-        {!dbLesson && <p className="forge-example-notice">Example lesson · this is sample content, not an imported source.</p>}
+
         {lesson.courseSlug && (
           <Link
             href={`/course/${lesson.courseSlug}`}
@@ -97,7 +63,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
         </div>
 
         <div className="mt-8">
-          <NotesPanel />
+          <NotesPanel key={lesson.id} lessonId={lesson.id} initialValue={library.content} initialBookmarked={library.bookmarked} />
         </div>
 
         <nav aria-label="Adjacent lessons" className="forge-lesson-pagination">

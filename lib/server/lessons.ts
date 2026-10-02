@@ -118,8 +118,7 @@ export async function getAuthorizedLessonById(
   userId: string,
   lessonId: string
 ): Promise<{ id: string; title: string; markdown: string; courseTitle: string } | null> {
-  try {
-    const lesson = await prisma.lesson.findFirst({
+  const lesson = await prisma.lesson.findFirst({
       where: {
         id: lessonId,
         module: {
@@ -151,7 +150,4 @@ export async function getAuthorizedLessonById(
       markdown: lesson.markdown,
       courseTitle: lesson.module.course.title,
     };
-  } catch {
-    return null;
-  }
 }

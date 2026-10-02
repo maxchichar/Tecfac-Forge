@@ -17,10 +17,11 @@ describe.skipIf(!enabled)("project learning on isolated PostgreSQL", () => {
     const raw = process.env.PROJECT_TEST_DATABASE_URL;
     if (!raw) throw new Error("Set PROJECT_TEST_DATABASE_URL to a migrated local test database.");
     const url = new URL(raw);
-    if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || !url.pathname.includes("test")) {
-      throw new Error("Integration tests require a local database with 'test' in its name.");
+    if ((!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || !url.pathname.includes("test")) && !/^forge_test_[a-f0-9]{32}$/.test(url.searchParams.get("schema") ?? "")) {
+      throw new Error("Integration tests require a local test database or an isolated forge_test_<UUID> schema.");
     }
     vi.stubEnv("DATABASE_URL", raw);
+    vi.stubEnv("GROQ_API_KEY", "");
     ({ prisma: db } = await import("@/lib/prisma"));
     service = await import("@/lib/server/projects/service");
     await db.user.createMany({ data: Object.entries(ids).filter(([role]) => role !== "workspace").map(([role, id]) => ({ id, name: role, email: `${id}@forge-test.invalid` })) });
@@ -64,6 +65,34 @@ describe.skipIf(!enabled)("project learning on isolated PostgreSQL", () => {
   });
 
   const evidence = () => ({ milestoneId: firstId, artifact: "Example investigation artifact", explanation: "See docs/client.md for the documented behavior.", verification: "Compared the explanation to the selected source.", criterionEvidence: ["Relevant behavior is traced in the artifact.", "Constraints and open questions are recorded."], selfChecked: true });
+
+  it("preserves learning evidence across re-analysis", async () => {
+    const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
+    const { analyzeCourseIntelligence } = await import("@/lib/server/intelligence/pipeline");
+    const first = await analyzeCourseIntelligence(ids.learner, project.courseId, { force: true });
+    expect(first.ok).toBe(true);
+    const concept = await db.concept.findFirstOrThrow({ where: { courseId: project.courseId } });
+    const attempt = await db.practiceAttempt.create({ data: { userId: ids.learner, workspaceId: ids.workspace, conceptId: concept.id, prompt: "Explain the behavior", response: "Recorded evidence", feedback: "Try a check", strengths: [], missing: [] } });
+    const second = await analyzeCourseIntelligence(ids.learner, project.courseId, { force: true });
+    expect(second.ok).toBe(true);
+    expect(await db.practiceAttempt.findUnique({ where: { id: attempt.id } })).not.toBeNull();
+  });
+
+  it("persists private notes, bookmarks and authorized search", async () => {
+    const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
+    const source = await db.lesson.findFirstOrThrow({ where: { module: { courseId: project.courseId } } });
+    const library = await import("@/lib/server/library");
+    await library.saveLessonLibrary(ids.learner, source.id, { content: "private investigation", bookmarked: true });
+    await library.saveLessonLibrary(ids.learner, source.id, { content: "private investigation revised", bookmarked: true });
+    expect((await library.getPersonalNotes(ids.learner))[0].content).toBe("private investigation revised");
+    expect(await library.getPersonalNotes(ids.reviewer)).toHaveLength(0);
+    expect(await library.getPersonalBookmarks(ids.learner)).toHaveLength(1);
+    expect(await library.searchLibrary(ids.outsider, "Client")).toHaveLength(0);
+    expect(await library.searchLibrary(ids.reviewer, "private investigation")).toHaveLength(0);
+    await expect(library.saveLessonLibrary(ids.outsider, source.id, { content: "overwrite" })).rejects.toThrow("Lesson not found");
+    await library.saveLessonLibrary(ids.learner, source.id, { bookmarked: false });
+    expect(await library.getPersonalBookmarks(ids.learner)).toHaveLength(0);
+  });
 
   it("rejects an outsider and refuses a skipped milestone", async () => {
     expect(await service.getLearningProjects(ids.outsider, projectId)).toEqual([]);
