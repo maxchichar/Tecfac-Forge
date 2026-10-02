@@ -3,6 +3,7 @@ import { generateAssessmentPrompt, evaluateAssessmentSubmission } from "./evalua
 import { AssessmentPrompt, AssessmentEvaluationResult, ConceptMasteryReport, PrerequisiteMasteryRef } from "./types";
 import { deriveLearningObjective } from "@/lib/server/curriculum/objectives";
 import { MasteryState } from "@prisma/client";
+import { evaluateMasteryPolicy } from "./mastery";
 import { logger } from "@/lib/logger";
 
 /**
@@ -47,11 +48,8 @@ export async function getAuthorizedConceptAssessment(
 
   if (!concept) return null;
 
-  const primaryEvidence = concept.evidence[0] || {
-    filePath: "unknown.md",
-    section: null,
-    excerpt: concept.description,
-  };
+  const primaryEvidence = concept.evidence[0];
+  if (!primaryEvidence) return null;
 
   const learningObjective = deriveLearningObjective(
     concept.name,
@@ -163,13 +161,12 @@ export async function submitAuthorizedAssessmentAttempt(
   const priorPassedCount = priorAttempts.filter((a) => a.passed).length;
 
   // 3. Evaluate submission
-  const evaluation = await evaluateAssessmentSubmission(
-    prompt,
-    response,
-    priorAttemptsCount,
-    priorPassedCount,
-    fetchFn
-  );
+  let evaluation: AssessmentEvaluationResult;
+  try {
+    evaluation = await evaluateAssessmentSubmission(prompt, response, priorAttemptsCount, priorPassedCount, fetchFn);
+  } catch {
+    return { ok: false, status: 503, error: "Assessment feedback is temporarily unavailable. Your response has not been graded; please retry." };
+  }
 
   // 4. Fetch concept workspaceId for tenancy
   const concept = await prisma.concept.findUnique({
@@ -183,6 +180,11 @@ export async function submitAuthorizedAssessmentAttempt(
 
   // 5. Persist attempt and update ConceptMastery atomically in PostgreSQL
   const result = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`assessment:${userId}:${conceptId}`}))::text`;
+    const current = await tx.conceptMastery.findUnique({ where: { userId_conceptId: { userId, conceptId } } });
+    const passedCount = await tx.practiceAttempt.count({ where: { userId, conceptId, type: "assessment", passed: true } });
+    const policy = evaluateMasteryPolicy({ currentState: current?.state ?? prompt.currentMasteryState, assessmentPassed: evaluation.passed, assessmentScore: evaluation.score, priorAttemptsCount: current?.attemptsCount ?? 0, priorPassedCount: passedCount, prerequisites: prompt.prerequisites });
+    evaluation = { ...evaluation, updatedMasteryState: policy.state, masteryReason: policy.reason, isPrerequisiteBlocked: policy.isPrerequisiteBlocked, blockingPrerequisiteNames: policy.blockingPrerequisiteNames };
     // a. Record attempt
     const attempt = await tx.practiceAttempt.create({
       data: {
@@ -245,7 +247,7 @@ export async function submitAuthorizedAssessmentAttempt(
     });
 
     return attempt;
-  });
+  }, { timeout: 20_000, maxWait: 15_000 });
 
   logger.info("assessment.attempt_submitted", {
     userId,

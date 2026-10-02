@@ -22,7 +22,7 @@ export type BodyTextResult =
 /** Read a request body as text, rejecting anything over budget BEFORE parsing,
  *  so oversized payloads never reach JSON.parse or downstream work. */
 export async function readRequestBodyText(
-  request: Request,
+  request: Pick<Request, "body">,
   maxBytes: number = MAX_JSON_BODY_BYTES
 ): Promise<BodyTextResult> {
   const reader = request.body?.getReader();
@@ -82,9 +82,11 @@ const chatContextSchema = z.object({
 const chatRequestSchema = z.object({
   messages: z.array(chatMessageSchema).min(1).max(MAX_CHAT_MESSAGES),
   context: chatContextSchema,
+  mode: z.enum(["auto", "hint", "explain", "challenge", "debug", "review"]).optional(),
 }).strict();
 
 export type ChatRequest = {
+  mode?: "auto" | "hint" | "explain" | "challenge" | "debug" | "review";
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   context: { lessonId: string; lessonTitle: string; courseTitle: string; projectId?: string; milestoneId?: string };
 };

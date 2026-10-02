@@ -1,4 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { resetEnvCache } from "@/lib/env";
+afterEach(() => { vi.unstubAllEnvs(); resetEnvCache(); });
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
   generateAssessmentPrompt,
   evaluateAssessmentSubmissionDeterministic,
@@ -390,6 +392,7 @@ describe("Authorized Assessment Service: Database Transactions & Tenant Isolatio
   });
 
   it("submits assessment, atomically writes PracticeAttempt and updates ConceptMastery", async () => {
+    vi.stubEnv("GROQ_API_KEY", "test-key"); resetEnvCache();
     const mockConcept = {
       id: "concept-123",
       name: "Borrow Checker",
@@ -432,8 +435,10 @@ describe("Authorized Assessment Service: Database Transactions & Tenant Isolatio
     vi.mocked(prisma.$transaction).mockImplementationOnce(async (callback: unknown) => {
       const txFn = callback as (tx: unknown) => Promise<unknown>;
       return txFn({
+        $queryRaw: vi.fn().mockResolvedValue([]),
         practiceAttempt: {
           create: vi.fn().mockResolvedValue(mockCreatedAttempt),
+          count: vi.fn().mockResolvedValue(0),
         },
         conceptMastery: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -445,7 +450,8 @@ describe("Authorized Assessment Service: Database Transactions & Tenant Isolatio
     const result = await submitAuthorizedAssessmentAttempt(
       "u-1",
       "concept-123",
-      "Borrow Checker enforces that you can have one mutable or many immutable references, preventing races and dangling pointers."
+      "Borrow Checker enforces that you can have one mutable or many immutable references, preventing races and dangling pointers.",
+      vi.fn().mockResolvedValue(Response.json({ choices: [{ message: { content: JSON.stringify({ score: 85, passed: true, strengths: ["Explains constraints"], missing: [], feedback: "Grounded in the cited source." }) } }] }))
     );
 
     expect(result.ok).toBe(true);

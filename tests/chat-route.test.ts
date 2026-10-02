@@ -19,11 +19,12 @@ const rateState = vi.hoisted<{ current: RateResult }>(() => ({
   current: { allowed: true, remaining: 30 },
 }));
 const envState = vi.hoisted<{ current: Record<string, string | undefined> }>(() => ({
-  current: { OPENAI_API_KEY: "test-key", OPENAI_MODEL: undefined },
+  current: { GROQ_API_KEY: "test-key", GROQ_MODEL: undefined },
 }));
 
 vi.mock("@/lib/env", () => ({
-  DEFAULT_AI_MODEL: "gpt-4o-mini",
+  DEFAULT_AI_MODEL: "openai/gpt-oss-120b",
+  DEFAULT_FAST_AI_MODEL: "openai/gpt-oss-20b",
   envString: (key: string) => envState.current[key] ?? undefined,
 }));
 
@@ -31,9 +32,10 @@ vi.mock("@/lib/server/session", () => ({
   getSessionState: async () => sessionState.current,
 }));
 
-vi.mock("@/lib/rate-limit", () => ({
-  aiChatRateLimiter: { check: () => rateState.current },
-}));
+vi.mock("@/lib/server/ai/quota", () => ({ enforceAIQuota: async () => rateState.current.allowed ? null : new Response(JSON.stringify({ code: "rate_limited" }), { status: 429, headers: { "Retry-After": String(rateState.current.retryAfterSeconds) } }) }));
+
+vi.mock("@/lib/server/lessons", () => ({ getAuthorizedLessonById: async (_user: string, id: string) => id === "l1" ? { id, title: "HTML Fundamentals", courseTitle: "Web Development", markdown: "A closure captures its lexical scope." } : null }));
+vi.mock("@/lib/prisma", () => ({ prisma: { conceptEvidence: { findMany: async () => [] } } }));
 
 import { POST } from "@/app/api/ai/chat/route";
 
@@ -52,7 +54,7 @@ async function jsonOf(res: Response): Promise<{ code?: string; message?: string;
 }
 
 function okProvider(): typeof fetch {
-  return (async () => new Response(JSON.stringify({ output_text: "Hello there" }), { status: 200 })) as typeof fetch;
+  return (async () => new Response(JSON.stringify({ choices: [{ message: { content: "Hello there" }, finish_reason: "stop" }] }), { status: 200 })) as typeof fetch;
 }
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -61,7 +63,7 @@ describe("POST /api/ai/chat", () => {
   beforeEach(() => {
     sessionState.current = { kind: "ok", userId: "user-1" };
     rateState.current = { allowed: true, remaining: 30 };
-    envState.current = { OPENAI_API_KEY: "test-key", OPENAI_MODEL: undefined };
+    envState.current = { GROQ_API_KEY: "test-key", GROQ_MODEL: undefined };
     fetchMock.mockReset();
     fetchMock.mockImplementation(okProvider());
     vi.stubGlobal("fetch", fetchMock);
@@ -94,7 +96,7 @@ describe("POST /api/ai/chat", () => {
   });
 
   it("returns 503 when the AI provider key is missing (no stub answers)", async () => {
-    envState.current = { OPENAI_API_KEY: undefined, OPENAI_MODEL: undefined };
+    envState.current = { GROQ_API_KEY: undefined, GROQ_MODEL: undefined };
     const res = await send(VALID_BODY);
     expect(res.status).toBe(503);
     expect(await jsonOf(res)).toMatchObject({ code: "ai_not_configured" });
@@ -145,7 +147,7 @@ describe("POST /api/ai/chat", () => {
   it("forwards a successful provider reply", async () => {
     const res = await send(VALID_BODY);
     expect(res.status).toBe(200);
-    expect(await jsonOf(res)).toEqual({ reply: "Hello there" });
+    expect(await jsonOf(res)).toMatchObject({ reply: "Hello there" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

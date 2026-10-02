@@ -33,6 +33,8 @@ export function AIChatPanel({
   ]);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const [mode, setMode] = React.useState<"auto" | "hint" | "explain" | "challenge" | "debug" | "review">("auto");
+  const [error, setError] = React.useState("");
   const listRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -45,13 +47,15 @@ export function AIChatPanel({
     setMessages(next);
     setInput("");
     setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: next.slice(-20),
+          messages: next.slice(-8).map((message) => ({ ...message, content: message.content.slice(0, 2000) })),
+          mode,
           context: { lessonId, lessonTitle, courseTitle, ...(projectId ? { projectId, milestoneId } : {}) },
         }),
       });
@@ -59,21 +63,14 @@ export function AIChatPanel({
         reply?: string;
         message?: string;
       } | null;
-      // The server returns { reply } on success and { code, message } on any
-      // non-2xx — surface the server's safe message, never crash on a shape we
-      // don't recognize.
-      const assistantReply =
-        data && typeof data.reply === "string"
-          ? data.reply
-          : data && typeof data.message === "string"
-            ? data.message
-            : "The AI tutor couldn't respond right now. Please try again in a moment.";
-      setMessages((m) => [...m, { role: "assistant", content: assistantReply }]);
-    } catch {
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", content: "Something went wrong reaching the AI tutor. Try again in a moment." },
-      ]);
+      if (!res.ok || !data?.reply) {
+        throw new Error(data?.message ?? "The tutor could not respond. Please try again.");
+      }
+      setMessages((m) => [...m, { role: "assistant", content: data.reply! }]);
+    } catch (err) {
+      setMessages((m) => m.slice(0, -1));
+      setInput(text);
+      setError(err instanceof Error ? err.message : "The tutor could not respond. Your question is still here.");
     } finally {
       setLoading(false);
     }
@@ -91,6 +88,7 @@ export function AIChatPanel({
         </div>
       </div>
 
+      <label className="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-text-secondary)]">Approach<select aria-label="Tutor approach" value={mode} disabled={loading} onChange={(e) => setMode(e.target.value as typeof mode)} className="h-10 min-w-0 flex-1 rounded border border-[var(--color-border-strong)] bg-[var(--color-bg)] px-2"><option value="auto">Guide me</option><option value="hint">Give me a hint</option><option value="explain">Explain the idea</option><option value="challenge">Challenge me</option><option value="debug">Help me debug</option><option value="review">Review my reasoning</option></select></label>
       <div ref={listRef} role="log" aria-label="Tutor conversation" aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.map((m, i) => (
           <div
@@ -125,6 +123,7 @@ export function AIChatPanel({
         ))}
       </div>
 
+      {error && <p role="alert" className="px-4 py-2 text-xs text-[var(--color-danger)]">{error}</p>}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -140,7 +139,7 @@ export function AIChatPanel({
           placeholder={projectId ? "Ask about this milestone…" : "Ask about this lesson…"}
           className="h-11 min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-[13px] outline-none placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent-solid)]"
         />
-        <Button type="submit" size="icon" disabled={loading} aria-label="Send message">
+        <Button type="submit" size="icon" disabled={loading || !input.trim()} aria-label="Send message">
           <Send className="h-3.5 w-3.5" />
         </Button>
       </form>

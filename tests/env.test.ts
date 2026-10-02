@@ -35,7 +35,7 @@ describe("parseEnv", () => {
   });
 
   it("treats empty string the same as missing", () => {
-    const parsed = parseEnv({ OPENAI_API_KEY: "" });
-    expect(parsed.values.OPENAI_API_KEY).toBeUndefined();
+    const parsed = parseEnv({ GROQ_API_KEY: "" });
+    expect(parsed.values.GROQ_API_KEY).toBeUndefined();
   });
 });

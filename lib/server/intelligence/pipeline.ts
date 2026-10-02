@@ -1,16 +1,17 @@
+import { envString, DEFAULT_AI_MODEL } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { logger, safeErrorMessage } from "@/lib/logger";
 import {
   SourceUnit,
   extractLocalCandidatesFromUnit,
   synthesizeConceptsAndRelationships,
-  enrichExtractionWithOpenAI,
+  enrichExtractionWithGroq,
   normalizeConceptSlug,
 } from "./extractor";
 import { CourseIntelligenceReport } from "./types";
 import { getAuthorizedCourseIntelligence } from "./queries";
 
-export const ANALYSIS_VERSION = "1.0.0";
+export const ANALYSIS_VERSION = "1.1.0";
 
 export interface AnalyzeOptions {
   force?: boolean;
@@ -88,7 +89,7 @@ export async function analyzeCourseIntelligence(
         workspaceId: course.workspaceId,
         status: "processing",
         version: ANALYSIS_VERSION,
-        model: process.env.OPENAI_API_KEY ? (process.env.OPENAI_MODEL || "gpt-4o-mini") : "ast-deterministic",
+        model: "markdown-deterministic",
         sourceRevision,
       },
     });
@@ -126,7 +127,7 @@ export async function analyzeCourseIntelligence(
     const synthesized = synthesizeConceptsAndRelationships(candidateConcepts, units);
 
     // Optional Stage C: AI enrichment if API key is present
-    const finalOutput = await enrichExtractionWithOpenAI(synthesized, units, options.fetchFn);
+    const finalOutput = await enrichExtractionWithGroq(synthesized, units, options.fetchFn);
 
     // Map units by slug/title to associate evidence with real lesson IDs
     const unitMap = new Map<string, string>();
@@ -139,9 +140,10 @@ export async function analyzeCourseIntelligence(
     // 6. Atomic Database Persistence
     await prisma.$transaction(
       async (tx) => {
-        // Clear previous concepts and relationships for this course to ensure clean idempotency
+        // Serialize re-analysis and preserve stable concept IDs and learner evidence.
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${courseId}))::text`;
         await tx.conceptRelationship.deleteMany({ where: { courseId } });
-        await tx.concept.deleteMany({ where: { courseId } });
+
 
         // Create concepts with nested evidence in concurrency-bounded batches
         const createdConceptsMap = new Map<string, string>(); // canonical slug -> concept.id
@@ -152,8 +154,10 @@ export async function analyzeCourseIntelligence(
           const results = await Promise.all(
             batch.map(async (c) => {
               const slug = normalizeConceptSlug(c.name);
-              const created = await tx.concept.create({
-                data: {
+              const created = await tx.concept.upsert({
+                where: { courseId_slug: { courseId, slug } },
+                update: { name: c.name, description: c.description, importance: c.importance, confidence: c.confidence, evidence: { deleteMany: {}, create: c.evidence.map((ev) => ({ filePath: ev.filePath, section: ev.section || null, excerpt: ev.excerpt, confidence: ev.confidence, lessonId: unitMap.get(ev.filePath) ?? null })) } },
+                create: {
                   courseId,
                   workspaceId: course.workspaceId,
                   name: c.name,
@@ -241,6 +245,7 @@ export async function analyzeCourseIntelligence(
           where: { id: analysisRun.id },
           data: {
             status: "completed",
+            model: finalOutput === synthesized ? "markdown-deterministic" : `markdown + ${envString("GROQ_MODEL") ?? DEFAULT_AI_MODEL}`,
             conceptsCount: finalOutput.concepts.length,
             relationshipsCount: relData.length,
             durationMs,
@@ -277,7 +282,7 @@ export async function analyzeCourseIntelligence(
         where: { id: analysisRunId },
         data: {
           status: "failed",
-          errorMessage: safeErrorMessage(err).slice(0, 500),
+          errorMessage: "Analysis failed. Please retry or contact the workspace operator.",
           completedAt: new Date(),
         },
       });

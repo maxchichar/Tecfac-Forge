@@ -520,3 +520,12 @@ model ConceptMastery {
   @@index([userId, state])
 }
 
+
+// Shared fixed-window quotas across serverless instances; no prompt content stored.
+model UsageQuota {
+  key       String @id
+  count     Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

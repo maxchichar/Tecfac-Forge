@@ -1,3 +1,5 @@
+import { groqCompletion } from "@/lib/server/ai/groq";
+import { envString } from "@/lib/env";
 import { PracticePrompt, PracticeEvaluationResult, PracticeTaskType, SourceEvidenceCitation } from "./types";
 import { z } from "zod";
 import { logger, safeErrorMessage } from "@/lib/logger";
@@ -190,15 +192,15 @@ export function evaluatePracticeSubmissionDeterministic(
 
 // Zod schema for optional AI evaluation
 const AIEvaluationSchema = z.object({
-  score: z.number().min(0).max(100),
+  score: z.number().int().min(0).max(100),
   passed: z.boolean(),
-  strengths: z.array(z.string()),
-  missing: z.array(z.string()),
-  feedback: z.string(),
+  strengths: z.array(z.string().max(1500)).max(12),
+  missing: z.array(z.string().max(1500)).max(12),
+  feedback: z.string().min(1).max(6000),
 });
 
 /**
- * Optional AI enrichment for practice evaluation when OPENAI_API_KEY is available.
+ * Optional AI enrichment for practice evaluation when GROQ_API_KEY is available.
  * Always falls back to deterministic evaluation if unavailable or malformed.
  */
 export async function evaluatePracticeSubmission(
@@ -207,9 +209,10 @@ export async function evaluatePracticeSubmission(
   fetchFn: typeof fetch = fetch
 ): Promise<PracticeEvaluationResult> {
   // Deterministic baseline
-  const deterministicResult = evaluatePracticeSubmissionDeterministic(prompt, userResponse);
+  const baseline = evaluatePracticeSubmissionDeterministic(prompt, userResponse);
+  const deterministicResult = { ...baseline, feedback: "Local text check only — not a correctness assessment. " + baseline.feedback };
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = envString("GROQ_API_KEY");
   if (!apiKey) {
     return deterministicResult;
   }
@@ -242,43 +245,23 @@ ${prompt.sourceEvidence.excerpt}
 ${userResponse}
 </untrusted_user_response>`;
 
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-    const res = await fetchFn("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-      }),
+    const rawContent = await groqCompletion({ purpose: "practice", json: true, maxTokens: 1000, fetchFn,
+      messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
     });
 
-    if (!res.ok) {
-      logger.warn("practice.ai_evaluation_http_error", { status: res.status });
-      return deterministicResult;
-    }
-
-    const data = await res.json();
-    const rawContent = data.output_text || data.choices?.[0]?.message?.content || "";
     const parsed = JSON.parse(rawContent);
     const validated = AIEvaluationSchema.safeParse(parsed);
 
     if (validated.success) {
       return {
-        passed: validated.data.passed,
+        passed: validated.data.score >= 70,
         score: validated.data.score,
         strengths: validated.data.strengths,
         missing: validated.data.missing,
         feedback: validated.data.feedback,
         sourceEvidenceExcerpt: prompt.sourceEvidence.excerpt,
-        suggestedNextStep: validated.data.passed
-          ? `Concept verified. Proceed to the next concept in your learning path.`
+        suggestedNextStep: validated.data.score >= 70
+          ? `AI feedback suggests this response meets the rubric. Proceed to the next concept in your learning path.`
           : `Review the source excerpt below and address the gaps before advancing.`,
       };
     }
