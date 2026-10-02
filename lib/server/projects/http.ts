@@ -2,11 +2,11 @@ import { z } from "zod";
 import { getSessionState } from "@/lib/server/session";
 import { jsonError, jsonOk } from "@/lib/api-error";
 import { readRequestBodyText, parseJsonObject } from "@/lib/validation";
-import { FixedWindowRateLimiter } from "@/lib/rate-limit";
+import { enforceRequestQuota } from "@/lib/server/request-quota";
 import { logger, safeErrorMessage } from "@/lib/logger";
 import { ProjectError } from "./service";
 
-const limiter = new FixedWindowRateLimiter({ max: 20 });
+
 
 export async function projectMutation<T>(req: Request, schema: z.ZodType<T>, action: (userId: string, input: T) => Promise<unknown>) {
   try {
@@ -14,8 +14,8 @@ export async function projectMutation<T>(req: Request, schema: z.ZodType<T>, act
     if (session.kind !== "ok") return jsonError(session.kind === "no_session" ? 401 : 503, "session_unavailable", "Sign in to continue. If sign-in is unavailable, try again shortly.");
     const origin = req.headers.get("origin");
     if (origin && origin !== new URL(req.url).origin) return jsonError(403, "invalid_origin", "Request origin is not permitted.");
-    const rate = limiter.check(session.userId);
-    if (!rate.allowed) return jsonError(429, "rate_limited", "Please wait before trying again.", { "Retry-After": String(rate.retryAfterSeconds) });
+    const limited = await enforceRequestQuota(`project:${session.userId}`, 20);
+    if (limited) return limited;
     const body = await readRequestBodyText(req);
     if (!body.ok) return jsonError(413, "request_too_large", "Submission is too large.");
     const json = parseJsonObject(body.text);

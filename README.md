@@ -9,9 +9,12 @@ Tecfac Forge turns technical source material into a developer learning workspace
 - Source concept extraction, learning paths, and lesson progress.
 - Projects with five practical milestones, per-learner submissions, evidence feedback, revisions, self-checks, and independent owner/admin review.
 - Interactive learning web connecting projects, milestones, selected sources, and extracted concepts.
-- AI tutor wiring with server-authorized lesson and optional project context.
+- Groq tutoring with server-authorized lesson and project context, teaching modes, token limits and shared daily request budgets.
+- Saved private notes, lesson bookmarks, and workspace-scoped source/project/note search.
 
-This is not a verified production deployment. Some older surfaces—including notes, bookmarks, profile, search, and navigation course lists—still use sample data. Existing concept assessment uses heuristic scoring and should not be treated as calibrated proof of mastery. Project evidence does not automatically award concept mastery.
+Concept assessment is AI feedback, not a calibrated certification of mastery. Reading progress and project self-checks do not award concept mastery. Imported material is limited to public GitHub Markdown, not full codebase analysis or execution.
+
+See [production operations](docs/production.md) for deployment, verification, budgets and limitations.
 
 ## Local setup
 
@@ -26,7 +29,7 @@ Configure `.env.local` from `.env.example`, including PostgreSQL and Better Auth
 npm run dev
 ```
 
-Sign in, import a public repository in Workspace, then open Projects to define an outcome and select source material. Roadmap opens the connected learning web. AI tutoring additionally requires `OPENAI_API_KEY`.
+Sign in, import a public repository in Workspace, then open Projects to define an outcome and select source material. Roadmap opens the connected learning web. AI tutoring additionally requires `GROQ_API_KEY`.
 
 ## Checks
 
@@ -37,6 +40,6 @@ npm run lint
 npm run build
 ```
 
-The existing live integration suite is opt-in and writes test records to its configured database. Run it only against a designated test database. Ordinary tests largely mock external providers and persistence; a passing suite does not establish live provider or database reliability.
+`npm run test:database` creates a random isolated PostgreSQL schema, migrates it, verifies import/project/review/history/library/quota behavior, and drops only that schema. It requires a configured database and permission to create schemas. Unit tests never load deployment credentials. `node scripts/check-ai.mjs` performs a small, billable Groq connection check.
 
 See [project learning architecture, limitations, and rollout](docs/project-learning.md) for evidence states, authorization, provenance, and remaining work.

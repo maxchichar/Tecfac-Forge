@@ -249,3 +249,5 @@ describe("P1.5 Hardening: Multi-Tenant Isolation", () => {
     findCourseSpy.mockRestore();
   });
 });
+
+vi.mock("@/lib/server/request-quota", () => ({ enforceRequestQuota: async () => null }));

@@ -44,3 +44,5 @@ describe("project mutation boundaries", () => {
     expect(mocks.review).not.toHaveBeenCalled();
   });
 });
+
+vi.mock("@/lib/server/request-quota", () => ({ enforceRequestQuota: async () => null }));

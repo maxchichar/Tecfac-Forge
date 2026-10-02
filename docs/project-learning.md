@@ -70,7 +70,7 @@ No hosted database is automatically altered by this change. Reverting the applic
 
 ## Verification and boundaries
 
-Run `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build`. Project tests cover input validation, byte limits, evidence states, graph integrity, access-filter construction, prerequisite gates, self-review refusal, superseded reviews, safe HTTP errors, and tutor authorization. Service tests use mocked Prisma calls; passing them is not proof of live database behavior.
+Run `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build`. Project tests cover input validation, byte limits, evidence states, graph integrity, access-filter construction, prerequisite gates, self-review refusal, superseded reviews, safe HTTP errors, and tutor authorization. Unit service tests use mocked Prisma calls. `npm run test:database` separately verifies these flows against an isolated PostgreSQL schema, including concurrent quotas and re-analysis history preservation.
 
 The new project integration suite requires `PROJECT_TEST_DATABASE_URL` pointing to an explicitly named local test database (hostname localhost/127.0.0.1 and a database name containing `test`). After migrating it, run `npm run test:projects:integration`. It creates and cleans only its own fixture records and never defaults to the hosted `.env.local` database.
 

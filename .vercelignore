@@ -1,0 +1,9 @@
+.local-backups
+.env*
+.git
+node_modules
+.next
+coverage
+tests
+scripts
+*.tsbuildinfo
