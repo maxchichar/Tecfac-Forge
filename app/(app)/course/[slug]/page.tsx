@@ -7,7 +7,7 @@ import { getSessionState } from "@/lib/server/session";
 import { getAuthorizedCourseBySlug } from "@/lib/server/courses";
 import { DifficultyBadge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/course/ProgressRing";
-import { Button } from "@/components/ui/Button";
+import { buttonVariants } from "@/components/ui/Button";
 import { CourseContentTabs } from "@/components/course/CourseContentTabs";
 import { getAuthorizedCourseIntelligence } from "@/lib/server/intelligence/queries";
 import { getAuthorizedLearningPath } from "@/lib/server/curriculum/learning-path";
@@ -65,6 +65,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
+      {!dbCourse && <p className="forge-example-notice">Example course · sample content and reading progress.</p>}
       <div>
         {course.repository && (
           <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-tertiary)]">
@@ -77,7 +78,7 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
             <h1 className="text-2xl font-semibold tracking-tight">{course.title}</h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--color-text-secondary)]">{course.description}</p>
           </div>
-          <ProgressRing value={course.completion} size={72} sublabel="complete" />
+          <ProgressRing value={course.completion} size={72} sublabel="read" />
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -93,11 +94,9 @@ export default async function CoursePage({ params }: { params: Promise<{ slug: s
         </div>
 
         {firstIncompleteLesson && (
-          <Link href={`/lesson/${firstIncompleteLesson.slug}`}>
-            <Button className="mt-5" size="md">
+          <Link className={`${buttonVariants()} mt-5 max-w-full whitespace-normal h-auto min-h-11 py-3`} href={`/lesson/${firstIncompleteLesson.slug}`}>
               Continue: {firstIncompleteLesson.title}
               <ArrowRight className="h-4 w-4" />
-            </Button>
           </Link>
         )}
       </div>

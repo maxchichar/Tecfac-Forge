@@ -1,81 +1,19 @@
 import { headers } from "next/headers";
-import { FolderGit2, Upload, FolderInput } from "lucide-react";
-import { courses as mockCourses } from "@/lib/mock-data";
+import { FolderGit2, ArrowRight } from "lucide-react";
 import { getSessionState } from "@/lib/server/session";
 import { getAuthorizedCourses } from "@/lib/server/courses";
 import { CourseCard } from "@/components/course/CourseCard";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ImportCourseDialog } from "@/components/workspace/ImportCourseDialog";
 
 export default async function WorkspacePage() {
   const session = await getSessionState(await headers());
-  const userId = session.kind === "ok" ? session.userId : "";
-
-  const dbCourses = userId ? await getAuthorizedCourses(userId) : [];
-  const courses = dbCourses.length > 0 ? dbCourses : mockCourses;
-
-  return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Workspace</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-tertiary)]">
-            Everything you&apos;ve imported, in one place.
-          </p>
-        </div>
-        <ImportCourseDialog>
-          <Button variant="primary" size="md">
-            <FolderInput className="h-4 w-4" />
-            Import course
-          </Button>
-        </ImportCourseDialog>
-      </div>
-
-      <Card className="grid grid-cols-1 divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-        <ImportCourseDialog>
-          <button className="w-full flex flex-col items-start gap-2 p-5 text-left transition-colors hover:bg-[var(--color-surface-hover)]">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-soft)]">
-              <FolderGit2 className="h-4.5 w-4.5 text-[var(--color-accent-solid)]" />
-            </div>
-            <p className="text-[13.5px] font-medium">GitHub repository</p>
-            <p className="text-xs text-[var(--color-text-tertiary)]">
-              Paste a repo URL — README, docs, and structure get parsed automatically.
-            </p>
-          </button>
-        </ImportCourseDialog>
-
-        <div className="flex flex-col items-start gap-2 p-5 text-left opacity-60">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-surface-hover)]">
-            <Upload className="h-4.5 w-4.5 text-[var(--color-text-tertiary)]" />
-          </div>
-          <p className="text-[13.5px] font-medium">ZIP upload (Upcoming)</p>
-          <p className="text-xs text-[var(--color-text-tertiary)]">
-            Drop a folder of Markdown files to build a course.
-          </p>
-        </div>
-
-        <div className="flex flex-col items-start gap-2 p-5 text-left opacity-60">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-surface-hover)]">
-            <FolderInput className="h-4.5 w-4.5 text-[var(--color-text-tertiary)]" />
-          </div>
-          <p className="text-[13.5px] font-medium">Docs site (Upcoming)</p>
-          <p className="text-xs text-[var(--color-text-tertiary)]">
-            GitBook, Docusaurus, or Mintlify doc import.
-          </p>
-        </div>
-      </Card>
-
-      <div>
-        <h2 className="mb-3 text-sm font-medium text-[var(--color-text-primary)]">
-          {courses.length} courses
-        </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  const courses = session.kind === "ok" ? await getAuthorizedCourses(session.userId) : [];
+  return <div className="forge-overview">
+    <header className="forge-project-header"><div><span className="forge-eyebrow">Start with the source</span><h1>Your source library.</h1><p>The reference material behind your lessons and projects.</p></div><ImportCourseDialog><Button><FolderGit2 size={17} /> Import from GitHub</Button></ImportCourseDialog></header>
+    <section className="forge-import-guide"><FolderGit2 size={28} /><div><h2>A repository is a place to begin.</h2><p>Import Markdown from a public GitHub repository, read the lessons, and connect the source to a project you can build.</p><p className="forge-footnote">GitHub Markdown import is available. ZIP uploads and documentation-site imports are not available yet.</p></div></section>
+    <div className="forge-section-row"><h2>{courses.length} {courses.length === 1 ? "course" : "courses"}</h2><span>Reading progress, at a glance</span></div>
+    {courses.length ? <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{courses.map((course) => <CourseCard key={course.id} course={course} />)}</div> : <div className="forge-empty"><BookPlaceholder /><h2>Your library starts here.</h2><p>Choose a repository you want to understand. Forge will bring its Markdown into your workspace.</p><ImportCourseDialog><Button>Import your first source <ArrowRight size={16} /></Button></ImportCourseDialog></div>}
+  </div>;
 }
+function BookPlaceholder() { return <FolderGit2 size={32} aria-hidden="true" />; }

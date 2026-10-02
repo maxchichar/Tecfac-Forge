@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { ForgeBrand } from "@/components/layout/ForgeBrand";
 import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
@@ -20,48 +21,37 @@ export default function LoginPage() {
     setError(null);
     setLoading("email");
 
-    const { error: authError } =
-      mode === "sign-in"
+    try {
+      const { error: authError } = mode === "sign-in"
         ? await authClient.signIn.email({ email, password, callbackURL: "/dashboard" })
         : await authClient.signUp.email({ email, password, name, callbackURL: "/dashboard" });
-
-    setLoading(null);
-    if (authError) {
-      setError(authError.message ?? "Something went wrong. Check your details and try again.");
-      return;
-    }
-    router.push("/dashboard");
+      if (authError) setError(authError.message ?? "Check your details and try again.");
+      else router.push("/dashboard");
+    } catch {
+      setError("We couldn’t reach the sign-in service. Your details are still here; please try again.");
+    } finally { setLoading(null); }
   }
 
   async function handleSocial(provider: "github" | "google") {
     setError(null);
     setLoading(provider);
-    const { error: authError } = await authClient.signIn.social({
-      provider,
-      callbackURL: "/dashboard",
-    });
-    if (authError) {
+    try {
+      const { error: authError } = await authClient.signIn.social({ provider, callbackURL: "/dashboard" });
+      if (authError) { setError(authError.message ?? `Couldn't sign in with ${provider}.`); setLoading(null); }
+    } catch {
+      setError("We couldn’t reach the sign-in service. Please try again.");
       setLoading(null);
-      setError(authError.message ?? `Couldn't sign in with ${provider}.`);
     }
-    // On success, Better Auth redirects the browser to the provider — no further action needed here.
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-6">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-accent-start)] to-[var(--color-accent-end)]">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <h1 className="mt-4 text-xl font-semibold tracking-tight">Welcome to Tecfac Forge</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-tertiary)]">
-            {mode === "sign-in" ? "Sign in to continue learning" : "Create your account"}
-          </p>
-        </div>
+    <main className="forge-auth-page">
+      <aside className="forge-auth-story"><ForgeBrand href="/" /><div><span className="forge-eyebrow">A place to work things out</span><h2>From “I’ve read it”<br />to “I can build it.”</h2><p>Follow the source. Connect the ideas. Turn your understanding into something that works.</p><ol><li><span>01</span> Understand the reference</li><li><span>02</span> Build a practical project</li><li><span>03</span> Verify and explain your work</li></ol></div><span className="forge-eyebrow">TECFAC FORGE / LEARNING THROUGH WORK</span></aside>
+      <section className="forge-auth-form">
+        <div className="forge-auth-heading"><div className="forge-auth-mobile-brand"><ForgeBrand href="/" /></div><span className="forge-eyebrow">Your workspace awaits</span><h1>{mode === "sign-in" ? "Welcome back." : "Make room to learn."}</h1><p>{mode === "sign-in" ? "Sign in and pick up where you left off." : "Create an account to begin your first project."}</p></div>
 
         {error && (
-          <div className="mb-4 rounded-[var(--radius-md)] border border-[var(--color-danger)]/40 bg-[var(--color-danger-soft)] px-3.5 py-2.5 text-[13px] text-[var(--color-danger)]">
+          <div role="alert" className="mb-4 rounded-[var(--radius-md)] border border-[var(--color-danger)]/40 bg-[var(--color-danger-soft)] px-3.5 py-2.5 text-[13px] text-[var(--color-danger)]">
             {error}
           </div>
         )}
@@ -97,16 +87,16 @@ export default function LoginPage() {
 
         <form onSubmit={handleEmailSubmit} className="space-y-3">
           {mode === "sign-up" && (
-            <input
+            <label className="forge-auth-label">Name<input autoComplete="name"
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
               className="h-11 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-sm outline-none placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent-solid)]"
-            />
+            /></label>
           )}
-          <input
+          <label className="forge-auth-label">Email<input autoComplete="email"
             type="email"
             required
             value={email}
@@ -114,7 +104,7 @@ export default function LoginPage() {
             placeholder="you@example.com"
             className="h-11 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-sm outline-none placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent-solid)]"
           />
-          <input
+          </label><label className="forge-auth-label">Password<input autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
             type="password"
             required
             minLength={8}
@@ -123,9 +113,9 @@ export default function LoginPage() {
             placeholder="Password"
             className="h-11 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-sm outline-none placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-accent-solid)]"
           />
-          <Button type="submit" className="w-full" disabled={loading !== null}>
+          </label><Button type="submit" className="w-full" disabled={loading !== null}>
             {loading === "email" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {mode === "sign-in" ? "Sign in" : "Create account"}
+            {mode === "sign-in" ? "Continue learning" : "Create account"}
           </Button>
         </form>
 
@@ -133,16 +123,17 @@ export default function LoginPage() {
           {mode === "sign-in" ? "Don't have an account?" : "Already have an account?"}{" "}
           <button
             type="button"
+            disabled={loading !== null}
             onClick={() => {
               setError(null);
               setMode(mode === "sign-in" ? "sign-up" : "sign-in");
             }}
-            className="font-medium text-[var(--color-accent-solid)] hover:underline"
+            className="min-h-11 font-medium text-[var(--color-text-primary)] underline underline-offset-4"
           >
             {mode === "sign-in" ? "Sign up" : "Sign in"}
           </button>
         </p>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

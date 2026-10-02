@@ -127,7 +127,7 @@ export function AssessmentModal({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-indigo-400">
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
               <Award className="h-5 w-5" />
               <span className="text-xs font-semibold uppercase tracking-wider">
                 Concept Assessment & Mastery
@@ -137,7 +137,7 @@ export function AssessmentModal({
               <span
                 className={`text-xs px-2.5 py-0.5 rounded-full font-medium border ${
                   masteryReport.state === "mastered"
-                    ? "bg-purple-500/10 text-purple-300 border-purple-500/30"
+                    ? "bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] border-[var(--color-border-strong)]"
                     : masteryReport.state === "demonstrated"
                     ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
                     : masteryReport.state === "learning"
@@ -197,7 +197,7 @@ export function AssessmentModal({
             {/* Scenario & Challenge */}
             <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-2">
               <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
-                <ShieldAlert className="h-4 w-4 text-indigo-400" />
+                <ShieldAlert className="h-4 w-4 text-[var(--color-text-secondary)]" />
                 Evaluative Challenge
               </div>
               <p className="text-sm text-[var(--color-text-primary)]">{prompt.scenario}</p>
@@ -209,7 +209,7 @@ export function AssessmentModal({
             {/* Rubric Requirements */}
             <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] p-3">
               <h5 className="text-xs font-medium text-[var(--color-text-tertiary)] flex items-center gap-1.5 mb-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-indigo-400" /> Assessment Rubric Requirements:
+                <Sparkles className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" /> Assessment Rubric Requirements:
               </h5>
               <ul className="list-disc list-inside space-y-1 text-xs text-[var(--color-text-secondary)]">
                 {prompt.rubricGuidelines.map((guideline, i) => (
@@ -219,7 +219,7 @@ export function AssessmentModal({
             </div>
 
             {/* Source Truth Evidence */}
-            <div className="rounded-[var(--radius-md)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-hover)] p-3 space-y-1 text-xs">
+            <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-hover)] p-3 space-y-1 text-xs">
               <div className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--color-text-tertiary)]">
                 <FileText className="h-3 w-3" />
                 {prompt.sourceEvidence.filePath}
@@ -241,7 +241,7 @@ export function AssessmentModal({
                 rows={6}
                 required
                 placeholder="Explain the operational invariants, failure modes prevented, and concrete mechanisms..."
-                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm focus:border-indigo-400 focus:outline-none"
+                className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm focus:border-[var(--color-text-primary)] focus:outline-none"
               />
               <div className="text-right text-[11px] text-[var(--color-text-tertiary)]">
                 {response.length} characters (min 25)
@@ -256,7 +256,7 @@ export function AssessmentModal({
               <Button
                 type="submit"
                 disabled={submitting || response.trim().length < 25}
-                className="gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white"
+                className="gap-1.5 bg-[var(--color-accent-solid)] text-[var(--color-bg)] hover:brightness-110"
               >
                 {submitting ? "Evaluating against source rubric..." : "Submit for Evaluation"}
               </Button>
@@ -272,7 +272,7 @@ export function AssessmentModal({
               className={`rounded-[var(--radius-md)] border p-4 ${
                 evaluation.passed
                   ? evaluation.updatedMasteryState === "mastered"
-                    ? "border-purple-500/30 bg-purple-500/10"
+                    ? "border-[var(--color-border-strong)] bg-[var(--color-surface-hover)]"
                     : "border-emerald-500/30 bg-emerald-500/10"
                   : "border-amber-500/30 bg-amber-500/10"
               }`}
@@ -281,7 +281,7 @@ export function AssessmentModal({
                 <div className="flex items-center gap-2">
                   {evaluation.passed ? (
                     evaluation.updatedMasteryState === "mastered" ? (
-                      <Award className="h-6 w-6 text-purple-400" />
+                      <Award className="h-6 w-6 text-[var(--color-text-secondary)]" />
                     ) : (
                       <CheckCircle2 className="h-6 w-6 text-emerald-400" />
                     )
@@ -365,7 +365,7 @@ export function AssessmentModal({
             </div>
 
             {/* Suggested Next Step */}
-            <p className="text-xs font-medium text-indigo-400">
+            <p className="text-xs font-medium text-[var(--color-text-secondary)]">
               {evaluation.suggestedNextStep}
             </p>
 
@@ -376,7 +376,7 @@ export function AssessmentModal({
                   <RotateCcw className="h-3.5 w-3.5" /> Refine Response
                 </Button>
               ) : (
-                <Button onClick={onClose} className="gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white">
+                <Button onClick={onClose} className="gap-1.5 bg-[var(--color-accent-solid)] text-[var(--color-bg)] hover:brightness-110">
                   Continue <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               )}

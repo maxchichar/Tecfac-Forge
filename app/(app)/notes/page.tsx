@@ -10,7 +10,7 @@ export default function NotesPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Notes</h1>
       </div>
       <p className="mt-1 text-sm text-[var(--color-text-tertiary)]">
-        Markdown notes, autosaved and linked back to their lesson.
+        Example notes. Personal note saving is not available yet; lesson scratchpads are temporary.
       </p>
 
       <div className="mt-6 space-y-3">

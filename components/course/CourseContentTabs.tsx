@@ -46,11 +46,13 @@ export function CourseContentTabs({
 
   return (
     <div className="space-y-6">
+      {isDbCourse && <Link href={`/projects?course=${courseId}`} className="forge-primary-link">Build a project from this course →</Link>}
       {/* Tab Navigation */}
-      <div className="flex border-b border-[var(--color-border)]">
+      <div className="flex flex-wrap border-b border-[var(--color-border)]">
         <button
+          aria-pressed={activeTab === "path"}
           onClick={() => setActiveTab("path")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 border-b-2 min-h-11 px-3 py-2.5 text-sm font-medium transition-colors ${
             activeTab === "path"
               ? "border-[var(--color-accent-solid)] text-[var(--color-text-primary)]"
               : "border-transparent text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
@@ -66,8 +68,9 @@ export function CourseContentTabs({
         </button>
 
         <button
+          aria-pressed={activeTab === "curriculum"}
           onClick={() => setActiveTab("curriculum")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 border-b-2 min-h-11 px-3 py-2.5 text-sm font-medium transition-colors ${
             activeTab === "curriculum"
               ? "border-[var(--color-accent-solid)] text-[var(--color-text-primary)]"
               : "border-transparent text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
@@ -81,8 +84,9 @@ export function CourseContentTabs({
         </button>
 
         <button
+          aria-pressed={activeTab === "intelligence"}
           onClick={() => setActiveTab("intelligence")}
-          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 border-b-2 min-h-11 px-3 py-2.5 text-sm font-medium transition-colors ${
             activeTab === "intelligence"
               ? "border-[var(--color-accent-solid)] text-[var(--color-text-primary)]"
               : "border-transparent text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
@@ -127,7 +131,7 @@ export function CourseContentTabs({
               <h2 className="mb-3 text-sm font-medium">Projects</h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {projects.map((p) => (
-                  <Link key={p.id} href={`/project/${p.slug}`}>
+                  <Link key={p.id} href={isDbCourse ? `/project/${p.id}` : `/projects`}>
                     <Card className="p-4 hover:bg-[var(--color-surface-hover)]">
                       <div className="flex items-center justify-between">
                         <p className="text-[13.5px] font-medium">{p.title}</p>
@@ -154,7 +158,7 @@ export function CourseContentTabs({
               </div>
               <h3 className="mt-4 text-base font-semibold">Demo Course Intelligence Preview</h3>
               <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-text-tertiary)]">
-                This is a seeded demo course. Full source AST analysis and evidence grounding run on courses imported from real GitHub repositories in your workspace.
+                This is a seeded demo course. Source analysis and evidence references are available for imported courses in your workspace.
               </p>
             </Card>
           )}

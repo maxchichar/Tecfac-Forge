@@ -13,14 +13,15 @@ export default function BookmarksPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Bookmarks</h1>
       </div>
 
+      <p className="forge-example-notice mt-4">Example bookmarks. Saving personal bookmarks is not available yet.</p>
       <div className="mt-6 space-y-3">
-        {bookmarks.map((b) => {
+        {bookmarks.filter((b) => b.type !== "project").map((b) => {
           const Icon = ICONS[b.type];
           return (
             <Link key={b.id} href={b.href}>
               <Card className="flex items-center gap-3 p-4 transition-colors hover:bg-[var(--color-surface-hover)]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-soft)]">
-                  <Icon className="h-4 w-4 text-[var(--color-accent-solid)]" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-surface-hover)]">
+                  <Icon className="h-4 w-4 text-[var(--color-text-secondary)]" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] font-medium">{b.title}</p>
