@@ -26,11 +26,11 @@ export function CourseCard({ course }: { course: CourseCardData }) {
             <p className="truncate text-[11px] uppercase tracking-wide text-[var(--color-text-tertiary)]">
               {course.repository}
             </p>
-            <h3 className="mt-1 truncate text-[15px] font-semibold text-[var(--color-text-primary)] group-hover:text-gradient">
+            <h3 className="mt-1 text-[15px] font-semibold text-[var(--color-text-primary)]">
               {course.title}
             </h3>
           </div>
-          <ProgressRing value={course.completion} size={52} strokeWidth={5} label={`${course.completion}%`} />
+          <ProgressRing value={course.completion} size={52} strokeWidth={5} label={`${course.completion}%`} sublabel="read" />
         </div>
 
         <p className="mt-3 line-clamp-2 text-sm text-[var(--color-text-secondary)]">{course.description}</p>
@@ -49,7 +49,7 @@ export function CourseCard({ course }: { course: CourseCardData }) {
 
         <div className="mt-4 flex items-center gap-4 border-t border-[var(--color-border)] pt-3 text-xs text-[var(--color-text-tertiary)]">
           <span className="inline-flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" /> {course.estimatedHours}h
+            <Clock className="h-3.5 w-3.5" /> {course.estimatedHours}h estimated
           </span>
           <span className="inline-flex items-center gap-1.5">
             <BookOpen className="h-3.5 w-3.5" /> {course.moduleIds.length} modules

@@ -4,7 +4,7 @@ import { getSessionState } from "@/lib/server/session";
 import { getOrCreateUserWorkspace } from "@/lib/server/workspace";
 import { ingestGitHubRepoToDatabase } from "@/lib/server/importers/github";
 import { readRequestBodyText, parseJsonObject } from "@/lib/validation";
-import { courseImportRateLimiter } from "@/lib/rate-limit";
+import { enforceRequestQuota } from "@/lib/server/request-quota";
 import { z } from "zod";
 
 const ImportSchema = z.object({
@@ -19,12 +19,8 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Abuse protection (rate limit per authenticated user)
-  const rate = courseImportRateLimiter.check(`user:${session.userId}`);
-  if (!rate.allowed) {
-    return jsonError(429, "rate_limited", "Too many import requests. Please wait a moment before importing another repository.", {
-      "Retry-After": String(rate.retryAfterSeconds ?? 1),
-    });
-  }
+  const limited = await enforceRequestQuota(`import:${session.userId}`, 10);
+  if (limited) return limited;
 
   // 2. Validate body
   const bodyText = await readRequestBodyText(req);

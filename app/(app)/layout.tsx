@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { getSessionState } from "@/lib/server/session";
 import { isProduction, missingAuthEnv } from "@/lib/env";
 import { AppStateScreen } from "@/components/app/AppStateScreen";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { Sidebar, MobileNavigation } from "@/components/layout/Sidebar";
 import { Navbar } from "@/components/layout/Navbar";
 
 // Authentication gate for the whole authenticated area of the app.
@@ -62,10 +62,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-[var(--color-bg)]">
+      <a href="#main-content" className="forge-skip-link">Skip to content</a>
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Navbar />
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">{children}</main>
+        <MobileNavigation />
+        <main id="main-content" tabIndex={-1} className="flex-1 px-4 py-6 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
   );

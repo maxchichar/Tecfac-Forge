@@ -139,7 +139,7 @@ function remarkHighlightCode() {
 
       if (rawLang === "mermaid") {
         node.type = "html";
-        node.value = `<div class="mermaid-block not-prose my-6 rounded-xl border border-[var(--color-border)] bg-[#0d0d12] p-4 overflow-x-auto"><pre class="mermaid">${escapeHtml(
+        node.value = `<div class="mermaid-block not-prose my-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 overflow-x-auto"><pre class="mermaid">${escapeHtml(
           node.value
         )}</pre></div>`;
         continue;

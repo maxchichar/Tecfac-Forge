@@ -1,3 +1,4 @@
+import { enforceAIQuota } from "@/lib/server/ai/quota";
 import { NextRequest } from "next/server";
 import { jsonError, jsonOk } from "@/lib/api-error";
 import { getSessionState } from "@/lib/server/session";
@@ -65,6 +66,9 @@ export async function POST(
   if (!parsed.success) {
     return jsonError(400, "invalid_request", parsed.error.issues[0]?.message || "Invalid submission");
   }
+
+  const quotaError = await enforceAIQuota(session.userId);
+  if (quotaError) return quotaError;
 
   const result = await submitAuthorizedPracticeAttempt(session.userId, conceptId, parsed.data.response);
   if (!result.ok) {

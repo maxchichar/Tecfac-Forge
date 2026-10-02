@@ -1,4 +1,5 @@
-import { envString, DEFAULT_AI_MODEL } from "@/lib/env";
+import { envString } from "@/lib/env";
+import { groqCompletion } from "@/lib/server/ai/groq";
 import { logger, safeErrorMessage } from "@/lib/logger";
 import {
   ExtractedConcept,
@@ -265,21 +266,20 @@ export function synthesizeConceptsAndRelationships(
 }
 
 /**
- * Optional AI enrichment: when OPENAI_API_KEY is present, sends untrusted source
- * chunks to OpenAI with strict JSON schema validation to discover deeper conceptual
+ * Optional AI enrichment: when GROQ_API_KEY is present, sends untrusted source
+ * chunks to Groq with strict JSON schema validation to discover deeper conceptual
  * structures and cross-cutting architectural relationships.
  */
-export async function enrichExtractionWithOpenAI(
+export async function enrichExtractionWithGroq(
   baseOutput: ExtractionOutput,
   units: SourceUnit[],
   fetchFn: typeof fetch = fetch
 ): Promise<ExtractionOutput> {
-  const apiKey = envString("OPENAI_API_KEY");
+  const apiKey = envString("GROQ_API_KEY");
   if (!apiKey) {
     return baseOutput;
   }
 
-  const model = envString("OPENAI_MODEL") ?? DEFAULT_AI_MODEL;
   const contextSummary = units
     .slice(0, 8)
     .map((u) => `File: ${u.filePath || u.slug}\nModule: ${u.moduleTitle}\nTitle: ${u.title}\nContent:\n${u.markdown.slice(0, 1500)}`)
@@ -300,43 +300,19 @@ export async function enrichExtractionWithOpenAI(
   ].join("\n");
 
   try {
-    const res = await fetchFn("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        instructions: prompt,
-        input: [{ role: "user", content: "Extract canonical concepts, grounded evidence, and prerequisite relationships." }],
-      }),
-      signal: AbortSignal.timeout(30_000),
+    const replyText = await groqCompletion({ purpose: "extraction", json: true, maxTokens: 2400, fetchFn,
+      messages: [{ role: "system", content: prompt }, { role: "user", content: 'Return at most 8 concepts and 12 relationships. Each concept: {name,description,importance,confidence,evidence:[{filePath,section,excerpt,confidence}]}. Each relationship: {sourceConceptName,targetConceptName,type,confidence,reason,evidenceExcerpt}. Types: prerequisite, depends_on, related_to, implements, uses. Importance: foundational, core, advanced. Use exact source excerpts.' }],
     });
-
-    if (!res.ok) {
-      logger.warn("intelligence.ai_enrichment_failed", { status: res.status });
-      return baseOutput;
-    }
-
-    const data = await res.json();
-    const replyText = data?.output_text || data?.choices?.[0]?.message?.content;
-    if (!replyText) return baseOutput;
-
-    // Parse JSON from model output
-    const jsonMatch = replyText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return baseOutput;
-
-    const parsedJson = JSON.parse(jsonMatch[0]);
-    const validated = ExtractionOutputSchema.safeParse(parsedJson);
+    const validated = ExtractionOutputSchema.safeParse(JSON.parse(replyText));
     if (!validated.success) {
-      logger.warn("intelligence.ai_schema_validation_failed", { errors: JSON.stringify(validated.error.issues) });
+      logger.warn("intelligence.ai_schema_validation_failed");
       return baseOutput;
     }
-
+    // A syntactically valid citation is not proof: verify it against the supplied source.
+    const grounded = validated.data.concepts.map((concept) => ({ ...concept, evidence: concept.evidence.filter((ev) => units.some((unit) => (unit.filePath || unit.slug) === ev.filePath && unit.markdown.includes(ev.excerpt))) })).filter((concept) => concept.evidence.length > 0);
     // Merge AI extracted concepts with deterministic base concepts (ensuring zero data loss)
     const mergedConcepts = [...baseOutput.concepts];
-    for (const aiConcept of validated.data.concepts) {
+    for (const aiConcept of grounded) {
       const slug = normalizeConceptSlug(aiConcept.name);
       const existing = mergedConcepts.find((c) => normalizeConceptSlug(c.name) === slug);
       if (!existing) {
@@ -349,7 +325,9 @@ export async function enrichExtractionWithOpenAI(
       const exists = mergedRelationships.some(
         (r) => r.sourceConceptName === aiRel.sourceConceptName && r.targetConceptName === aiRel.targetConceptName
       );
-      if (!exists) {
+      const groundedNames = new Set(mergedConcepts.map((c) => normalizeConceptSlug(c.name)));
+      const quoted = aiRel.evidenceExcerpt && units.some((unit) => unit.markdown.includes(aiRel.evidenceExcerpt));
+      if (!exists && quoted && groundedNames.has(normalizeConceptSlug(aiRel.sourceConceptName)) && groundedNames.has(normalizeConceptSlug(aiRel.targetConceptName))) {
         mergedRelationships.push(aiRel);
       }
     }

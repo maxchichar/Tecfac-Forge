@@ -27,9 +27,9 @@ export function Badge({ className, variant, ...props }: BadgeProps) {
 }
 
 const DIFFICULTY_VARIANT = {
-  beginner: "success",
-  intermediate: "warning",
-  advanced: "danger",
+  beginner: "default",
+  intermediate: "default",
+  advanced: "default",
 } as const;
 
 export function DifficultyBadge({ difficulty }: { difficulty: "beginner" | "intermediate" | "advanced" }) {

@@ -16,8 +16,9 @@ import { z } from "zod";
 
 export const SECRET_MIN_LENGTH = 32;
 
-/** Canonical model used by the AI tutor when OPENAI_MODEL is not set. */
-export const DEFAULT_AI_MODEL = "gpt-4o-mini";
+/** Canonical model used by the AI tutor when GROQ_MODEL is not set. */
+export const DEFAULT_AI_MODEL = "openai/gpt-oss-120b";
+export const DEFAULT_FAST_AI_MODEL = "openai/gpt-oss-20b";
 
 /** Per-field zod validators. Absent/empty is handled separately (see parseEnv);
  *  these only run when a value is present, so "malformed" stays distinguishable
@@ -27,8 +28,11 @@ const fieldValidators: Record<string, z.ZodString> = {
   BETTER_AUTH_SECRET: z.string().min(SECRET_MIN_LENGTH),
   BETTER_AUTH_URL: z.string().url(),
   NEXT_PUBLIC_APP_URL: z.string().url(),
-  OPENAI_API_KEY: z.string().min(1),
-  OPENAI_MODEL: z.string().min(1),
+  GROQ_API_KEY: z.string().min(1),
+  GROQ_MODEL: z.string().min(1),
+  GROQ_FAST_MODEL: z.string().min(1),
+  AI_DAILY_USER_LIMIT: z.string().regex(/^[1-9][0-9]{0,4}$/),
+  AI_DAILY_GLOBAL_LIMIT: z.string().regex(/^[1-9][0-9]{0,6}$/),
   GITHUB_CLIENT_ID: z.string().min(1),
   GITHUB_CLIENT_SECRET: z.string().min(1),
   GOOGLE_CLIENT_ID: z.string().min(1),
@@ -116,9 +120,9 @@ export function missingAuthEnv(): EnvKey[] {
   return AUTH_REQUIRED_ENV.filter((key) => parsed.values[key] === undefined);
 }
 
-/** True when an OpenAI-style key is configured (chat available). */
+/** True when an Groq key is configured (chat available). */
 export function isAiConfigured(): boolean {
-  return getEnv().values.OPENAI_API_KEY !== undefined;
+  return getEnv().values.GROQ_API_KEY !== undefined;
 }
 
 /** Canonical deployment URL (server side) — BETTER_AUTH_URL, else NEXT_PUBLIC_APP_URL. */

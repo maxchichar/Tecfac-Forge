@@ -1,3 +1,5 @@
+import { groqCompletion } from "@/lib/server/ai/groq";
+import { envString } from "@/lib/env";
 import { AssessmentPrompt, AssessmentEvaluationResult, AssessmentTaskType, PrerequisiteMasteryRef } from "./types";
 import { SourceEvidenceCitation } from "@/lib/server/practice/types";
 import { MasteryState } from "@prisma/client";
@@ -244,11 +246,11 @@ export function evaluateAssessmentSubmissionDeterministic(
 
 // Zod schema for optional AI evaluation
 const AIEvaluationSchema = z.object({
-  score: z.number().min(0).max(100),
+  score: z.number().int().min(0).max(100),
   passed: z.boolean(),
-  strengths: z.array(z.string()),
-  missing: z.array(z.string()),
-  feedback: z.string(),
+  strengths: z.array(z.string().max(1500)).max(12),
+  missing: z.array(z.string().max(1500)).max(12),
+  feedback: z.string().min(1).max(6000),
 });
 
 /**
@@ -269,14 +271,14 @@ export async function evaluateAssessmentSubmission(
     priorPassedCount
   );
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = envString("GROQ_API_KEY");
   if (!apiKey || apiKey.trim() === "") {
-    return deterministicResult;
+    throw new Error("Assessment evaluation unavailable. Please try again; no grade has been recorded.");
   }
 
   // Guard against trivially short responses before calling AI
   if (userResponse.trim().length < 25) {
-    return deterministicResult;
+    throw new Error("Assessment evaluation unavailable. Please try again; no grade has been recorded.");
   }
 
   try {
@@ -307,44 +309,16 @@ ${prompt.rubricGuidelines.map((g) => `- ${g}`).join("\n")}
 ${userResponse}
 </untrusted_learner_response>`;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    const res = await fetchFn("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-      }),
-      signal: controller.signal,
+    const rawContent = await groqCompletion({ purpose: "assessment", json: true, maxTokens: 1000, fetchFn,
+      messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
     });
-
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      logger.warn("assessment.ai_evaluator_http_error", { status: res.status });
-      return deterministicResult;
-    }
-
-    const data = await res.json();
-    const rawContent = data.choices?.[0]?.message?.content;
-    if (!rawContent) return deterministicResult;
 
     const parsedJson = JSON.parse(rawContent);
     const parsed = AIEvaluationSchema.safeParse(parsedJson);
 
     if (!parsed.success) {
       logger.warn("assessment.ai_evaluator_schema_invalid", { error: parsed.error.message });
-      return deterministicResult;
+      throw new Error("Assessment evaluation unavailable. Please try again; no grade has been recorded.");
     }
 
     const ai = parsed.data;
@@ -374,6 +348,6 @@ ${userResponse}
     };
   } catch (err: unknown) {
     logger.warn("assessment.ai_evaluator_fallback", { error: safeErrorMessage(err) });
-    return deterministicResult;
+    throw new Error("Assessment evaluation unavailable. Please try again; no grade has been recorded.");
   }
 }

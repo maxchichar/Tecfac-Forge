@@ -1,3 +1,6 @@
+import { createHmac } from "node:crypto";
+import { envString } from "@/lib/env";
+import { enforceRequestQuota } from "@/lib/server/request-quota";
 import { NextRequest } from "next/server";
 import { isAuthConfigured, missingAuthEnv } from "@/lib/env";
 import { logger, safeErrorMessage } from "@/lib/logger";
@@ -21,8 +24,16 @@ async function handle(request: NextRequest): Promise<Response> {
   }
 
   try {
+    if (request.method === "POST") {
+      // Vercel overwrites this header at its trusted edge. Do not trust client
+      // forwarding headers when running directly on another host.
+      const address = process.env.VERCEL === "1" ? (request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown") : "local";
+      const fingerprint = createHmac("sha256", envString("BETTER_AUTH_SECRET")!).update(address).digest("hex");
+      const limited = await enforceRequestQuota(`auth:${fingerprint}`, 20);
+      if (limited) return limited;
+    }
     const { getAuth } = await import("@/auth/auth");
-    return getAuth().handler(request);
+    return await getAuth().handler(request);
   } catch (err) {
     logger.error("auth.endpoint_failed", { message: safeErrorMessage(err) });
     return Response.json(

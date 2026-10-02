@@ -2,10 +2,10 @@ import { cn } from "@/lib/utils";
 
 const INTENSITY_CLASS = [
   "bg-[var(--color-surface-hover)]",
-  "bg-[var(--color-accent-start)]/25",
-  "bg-[var(--color-accent-start)]/50",
-  "bg-[var(--color-accent-mid)]/75",
-  "bg-[var(--color-accent-end)]",
+  "bg-[var(--color-text-secondary)]/25",
+  "bg-[var(--color-text-secondary)]/50",
+  "bg-[var(--color-text-secondary)]/75",
+  "bg-[var(--color-text-secondary)]",
 ];
 
 export function StreakHeatmap({ values }: { values: number[] }) {

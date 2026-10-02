@@ -127,7 +127,7 @@ export function LearningPathView({ courseId, initialReport }: LearningPathViewPr
             </div>
             <div>
               <span className="text-[var(--color-text-tertiary)]">Mastered:</span>{" "}
-              <span className="font-semibold text-purple-400">{report.masteredConcepts || 0}</span>
+              <span className="font-semibold text-[var(--color-text-secondary)]">{report.masteredConcepts || 0}</span>
             </div>
             <div>
               <span className="text-[var(--color-text-tertiary)]">Available:</span>{" "}
@@ -217,13 +217,13 @@ export function LearningPathView({ courseId, initialReport }: LearningPathViewPr
                     : node.isCompleted
                     ? "border-emerald-500/30 bg-[var(--color-surface)]/70"
                     : node.isLocked
-                    ? "border-[var(--color-border-subtle)] bg-[var(--color-surface)]/40 opacity-75"
+                    ? "border-[var(--color-border)] bg-[var(--color-surface)]/40 opacity-75"
                     : "border-[var(--color-border)] bg-[var(--color-surface)]"
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                   {/* Left: Step indicator + Content */}
-                  <div className="flex items-start gap-3 min-w-0">
+                  <div className="flex flex-1 basis-64 items-start gap-3 min-w-0">
                     {/* Status Circle */}
                     <div className="pt-0.5 shrink-0">
                       {node.isCompleted ? (
@@ -231,7 +231,7 @@ export function LearningPathView({ courseId, initialReport }: LearningPathViewPr
                           <CheckCircle2 className="h-4 w-4" />
                         </div>
                       ) : isNext ? (
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-accent-solid)] text-white text-xs font-bold ring-4 ring-[var(--color-accent-soft)]">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-accent-solid)] text-[var(--color-bg)] text-xs font-bold ring-4 ring-[var(--color-accent-soft)]">
                           {node.sequenceOrder}
                         </div>
                       ) : node.isLocked ? (
@@ -255,8 +255,8 @@ export function LearningPathView({ courseId, initialReport }: LearningPathViewPr
                           {node.importance}
                         </span>
                         {node.masteryState === "mastered" ? (
-                          <span className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/30">
-                            <Award className="h-3 w-3 text-purple-400" /> Mastered
+                          <span className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-semibold bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-strong)]">
+                            <Award className="h-3 w-3 text-[var(--color-text-secondary)]" /> Mastered
                           </span>
                         ) : node.masteryState === "demonstrated" ? (
                           <span className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
@@ -267,7 +267,7 @@ export function LearningPathView({ courseId, initialReport }: LearningPathViewPr
                             Learning
                           </span>
                         ) : (
-                          <span className="rounded px-2 py-0.5 text-[10px] font-medium bg-[var(--color-surface-hover)] text-[var(--color-text-tertiary)] border border-[var(--color-border-subtle)]">
+                          <span className="rounded px-2 py-0.5 text-[10px] font-medium bg-[var(--color-surface-hover)] text-[var(--color-text-tertiary)] border border-[var(--color-border)]">
                             Not Started
                           </span>
                         )}
@@ -328,7 +328,7 @@ export function LearningPathView({ courseId, initialReport }: LearningPathViewPr
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 text-xs gap-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                          className="min-h-11 text-xs gap-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                         >
                           <BookOpen className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">Lesson</span>
@@ -340,7 +340,7 @@ export function LearningPathView({ courseId, initialReport }: LearningPathViewPr
                       size="sm"
                       disabled={node.isLocked}
                       onClick={() => handleOpenPractice(node)}
-                      className="h-8 text-xs gap-1"
+                      className="min-h-11 text-xs gap-1"
                     >
                       Practice
                     </Button>
@@ -351,12 +351,12 @@ export function LearningPathView({ courseId, initialReport }: LearningPathViewPr
                       onClick={() => handleOpenAssessment(node)}
                       className={`h-8 text-xs gap-1 ${
                         node.masteryState === "mastered"
-                          ? "border border-purple-500/30 text-purple-300 hover:bg-purple-500/10"
-                          : "border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10"
+                          ? "border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] bg-[var(--color-surface-hover)]"
+                          : "border border-[var(--color-border-strong)] text-[var(--color-text-secondary)] bg-[var(--color-surface-hover)]"
                       }`}
                       title={!node.canAssess ? "Engage prerequisites before taking assessment" : undefined}
                     >
-                      <Award className="h-3.5 w-3.5 text-indigo-400" />
+                      <Award className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
                       {node.masteryState === "mastered" ? "Re-Assess" : "Assess"}
                     </Button>
                   </div>

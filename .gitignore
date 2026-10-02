@@ -11,8 +11,6 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Operator-tool post-verify
-*.out
 
 # Editor directories and files
 .idea
@@ -58,3 +56,7 @@ uploads/*
 # Test coverage reports
 coverage.out
 node_modules
+
+# Local database snapshots and deployment metadata
+.local-backups/
+.vercel/

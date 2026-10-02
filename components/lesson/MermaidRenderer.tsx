@@ -21,12 +21,12 @@ export function MermaidRenderer({ scopeRef }: { scopeRef: React.RefObject<HTMLEl
         startOnLoad: false,
         theme: "dark",
         themeVariables: {
-          background: "#0d0d12",
-          primaryColor: "#1c1c28",
-          primaryTextColor: "#f2f2f7",
-          primaryBorderColor: "#2e2e42",
-          lineColor: "#6366f1",
-          fontFamily: "Inter, sans-serif",
+          background: "#0F172A",
+          primaryColor: "#1E293B",
+          primaryTextColor: "#E2E8F0",
+          primaryBorderColor: "#64748B",
+          lineColor: "#94A3B8",
+          fontFamily: "system-ui, sans-serif",
         },
       });
 

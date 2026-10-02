@@ -132,15 +132,15 @@ export function CourseIntelligenceView({ courseId, initialReport }: CourseIntell
         </Card>
         <Card className="p-4">
           <p className="text-xs text-[var(--color-text-tertiary)] font-medium">Foundational</p>
-          <p className="mt-1 text-2xl font-bold text-blue-400">{foundationalCount}</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--color-text-secondary)]">{foundationalCount}</p>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-[var(--color-text-tertiary)] font-medium">Core Concepts</p>
-          <p className="mt-1 text-2xl font-bold text-emerald-400">{coreCount}</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--color-text-secondary)]">{coreCount}</p>
         </Card>
         <Card className="p-4">
           <p className="text-xs text-[var(--color-text-tertiary)] font-medium">Prerequisite Links</p>
-          <p className="mt-1 text-2xl font-bold text-purple-400">{report.relationships.length}</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--color-text-secondary)]">{report.relationships.length}</p>
         </Card>
       </div>
 
@@ -158,6 +158,10 @@ export function CourseIntelligenceView({ courseId, initialReport }: CourseIntell
               return (
                 <div
                   key={concept.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
+                  onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedConceptId(concept.id); } }}
                   onClick={() => setSelectedConceptId(concept.id)}
                   className={`cursor-pointer rounded-[var(--radius-md)] border p-4 transition-all ${
                     isSelected
@@ -178,7 +182,7 @@ export function CourseIntelligenceView({ courseId, initialReport }: CourseIntell
 
                   <div className="mt-3 flex items-center justify-between text-[11px] text-[var(--color-text-tertiary)]">
                     <span className="flex items-center gap-1">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      <ShieldCheck className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
                       Grounded ({Math.round(concept.confidence * 100)}% conf.)
                     </span>
                     <span>{concept.evidence.length} source reference(s)</span>
@@ -216,7 +220,7 @@ export function CourseIntelligenceView({ courseId, initialReport }: CourseIntell
                     <div className="space-y-1.5 text-xs">
                       {selectedConcept.prerequisites.map((p, idx) => (
                         <div key={idx} className="flex items-center gap-1.5 text-[var(--color-text-secondary)]">
-                          <span className="font-semibold text-blue-400">{p.targetConceptName}</span>
+                          <span className="font-semibold text-[var(--color-text-secondary)]">{p.targetConceptName}</span>
                           <ArrowRight className="h-3 w-3 text-[var(--color-text-tertiary)]" />
                           <span className="italic text-[var(--color-text-tertiary)]">is prerequisite for this</span>
                         </div>
@@ -226,7 +230,7 @@ export function CourseIntelligenceView({ courseId, initialReport }: CourseIntell
                           <span className="font-semibold">{selectedConcept.name}</span>
                           <ArrowRight className="h-3 w-3 text-[var(--color-text-tertiary)]" />
                           <span className="italic text-[var(--color-text-tertiary)]">is required for</span>
-                          <span className="font-semibold text-purple-400">{d.sourceConceptName}</span>
+                          <span className="font-semibold text-[var(--color-text-secondary)]">{d.sourceConceptName}</span>
                         </div>
                       ))}
                     </div>
@@ -243,7 +247,7 @@ export function CourseIntelligenceView({ courseId, initialReport }: CourseIntell
                 {selectedConcept.evidence.map((ev, idx) => (
                   <Card key={idx} className="p-4 space-y-2.5 bg-[var(--color-surface)]">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-1.5 font-mono text-[var(--color-accent-solid)]">
+                      <span className="flex items-center gap-1.5 font-mono text-[var(--color-text-secondary)]">
                         <FileText className="h-3.5 w-3.5" />
                         {ev.filePath}
                       </span>

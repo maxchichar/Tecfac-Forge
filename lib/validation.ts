@@ -22,14 +22,29 @@ export type BodyTextResult =
 /** Read a request body as text, rejecting anything over budget BEFORE parsing,
  *  so oversized payloads never reach JSON.parse or downstream work. */
 export async function readRequestBodyText(
-  request: Request,
+  request: Pick<Request, "body">,
   maxBytes: number = MAX_JSON_BODY_BYTES
 ): Promise<BodyTextResult> {
-  const text = await request.text();
-  if (text.length > maxBytes) {
-    return { ok: false, code: "body_too_large", status: 413 };
+  const reader = request.body?.getReader();
+  if (!reader) return { ok: true, text: "" };
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = "";
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > maxBytes) {
+        await reader.cancel();
+        return { ok: false, code: "body_too_large", status: 413 };
+      }
+      text += decoder.decode(chunk.value, { stream: true });
+    }
+    return { ok: true, text: text + decoder.decode() };
+  } finally {
+    reader.releaseLock();
   }
-  return { ok: true, text };
 }
 
 export type JsonParseResult =
@@ -60,16 +75,20 @@ const chatContextSchema = z.object({
   lessonId: boundedString(200, 1, "lessonId"),
   lessonTitle: boundedString(200, 1, "lessonTitle"),
   courseTitle: boundedString(200, 1, "courseTitle"),
+  projectId: boundedString(200).optional(),
+  milestoneId: boundedString(200).optional(),
 }).strict();
 
 const chatRequestSchema = z.object({
   messages: z.array(chatMessageSchema).min(1).max(MAX_CHAT_MESSAGES),
   context: chatContextSchema,
+  mode: z.enum(["auto", "hint", "explain", "challenge", "debug", "review"]).optional(),
 }).strict();
 
 export type ChatRequest = {
+  mode?: "auto" | "hint" | "explain" | "challenge" | "debug" | "review";
   messages: Array<{ role: "user" | "assistant"; content: string }>;
-  context: { lessonId: string; lessonTitle: string; courseTitle: string };
+  context: { lessonId: string; lessonTitle: string; courseTitle: string; projectId?: string; milestoneId?: string };
 };
 
 export type ChatBodyResult =
