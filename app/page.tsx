@@ -121,12 +121,12 @@ export default function LandingPage() {
                   <div className="h-2.5 w-4/6 rounded bg-[var(--color-surface-hover)]" />
                 </div>
                 <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[#0d0d12] p-3 font-mono text-[11px] text-[var(--color-text-secondary)]">
-                  <span className="text-[var(--color-accent-solid)]">let</span> s = String::from(<span className="text-[var(--color-success)]">"hello"</span>);
+                  <span className="text-[var(--color-accent-solid)]">let</span> s = String::from(<span className="text-[var(--color-success)]">&quot;hello&quot;</span>);
                 </div>
                 <div className="mt-4 flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] px-3 py-2">
                   <Sparkles className="h-3.5 w-3.5 text-[var(--color-accent-solid)]" />
                   <p className="text-[11px] text-[var(--color-accent-solid)]">
-                    AI Tutor: "Copy types never move — want a quiz on this?"
+                    AI Tutor: &quot;Copy types never move — want a quiz on this?&quot;
                   </p>
                 </div>
               </div>
@@ -191,7 +191,7 @@ export default function LandingPage() {
           <Target className="h-6 w-6 text-[var(--color-accent-solid)]" />
           <h2 className="mt-4 text-2xl font-semibold tracking-tight">Import your first course today</h2>
           <p className="mt-2 max-w-md text-sm text-[var(--color-text-secondary)]">
-            The Odin Project, the Rust Book, or your own company's internal docs — start with what you're already reading.
+            The Odin Project, the Rust Book, or your own company&apos;s internal docs — start with what you&apos;re already reading.
           </p>
           <Link href="/login">
             <Button size="lg" className="mt-6">

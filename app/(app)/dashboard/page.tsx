@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { ArrowUpRight, Bookmark, NotebookPen, FolderKanban, Target } from "lucide-react";
+import { headers } from "next/headers";
+import { ArrowUpRight, Bookmark, NotebookPen, FolderKanban, Target, BookOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { CourseCard } from "@/components/course/CourseCard";
 import { ProgressRing } from "@/components/course/ProgressRing";
 import { StreakHeatmap } from "@/components/dashboard/StreakHeatmap";
 import { WeeklyBars } from "@/components/dashboard/WeeklyBars";
 import { Badge } from "@/components/ui/Badge";
+import { getSessionState } from "@/lib/server/session";
+import { getAuthorizedCourses } from "@/lib/server/courses";
+import { getUserDashboardStats } from "@/lib/server/progress";
+import { prisma } from "@/lib/prisma";
 import {
-  courses,
+  courses as mockCourses,
   bookmarks,
   notes,
   projects,
@@ -16,15 +21,31 @@ import {
   currentUser,
 } from "@/lib/mock-data";
 
-export default function DashboardPage() {
-  const inProgress = courses.filter((c) => c.completion > 0 && c.completion < 100);
+export default async function DashboardPage() {
+  const session = await getSessionState(await headers());
+  const userId = session.kind === "ok" ? session.userId : "";
+
+  const [dbUser, dbCourses, dbStats] = await Promise.all([
+    userId ? prisma.user.findUnique({ where: { id: userId }, select: { name: true } }) : null,
+    userId ? getAuthorizedCourses(userId) : [],
+    userId ? getUserDashboardStats(userId) : null,
+  ]);
+
+  const displayName = dbUser?.name ? dbUser.name.split(" ")[0] : currentUser.name.split(" ")[0];
+
+  // If user has database courses, prioritize those; otherwise fall back to starter courses
+  const displayCourses = dbCourses.length > 0 ? dbCourses : mockCourses;
+  const inProgress = displayCourses.filter((c) => c.completion > 0 && c.completion < 100);
+  const activeCourses = inProgress.length > 0 ? inProgress : displayCourses;
+
+  const totalCompletedLessons = dbStats ? dbStats.completedLessonsCount : 0;
   const goalPct = Math.min(100, Math.round((streak.todayMinutes / streak.dailyGoalMinutes) * 100));
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <p className="text-sm text-[var(--color-text-tertiary)]">Welcome back</p>
-        <h1 className="text-2xl font-semibold tracking-tight">{currentUser.name.split(" ")[0]}'s dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{displayName}&apos;s dashboard</h1>
       </div>
 
       {/* Top stat row */}
@@ -32,13 +53,18 @@ export default function DashboardPage() {
         <Card className="p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-[var(--color-text-tertiary)]">Today's goal</p>
-              <p className="mt-1 text-lg font-semibold">
-                {streak.todayMinutes}
-                <span className="text-sm text-[var(--color-text-tertiary)]"> / {streak.dailyGoalMinutes} min</span>
+              <p className="text-xs text-[var(--color-text-tertiary)]">Completed Lessons</p>
+              <p className="mt-1 text-2xl font-semibold">
+                {totalCompletedLessons}
+                <span className="text-xs font-normal text-[var(--color-text-tertiary)]"> lessons</span>
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
+                Across {displayCourses.length} active courses
               </p>
             </div>
-            <ProgressRing value={goalPct} size={56} strokeWidth={5} label={`${goalPct}%`} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-accent-soft)]">
+              <BookOpen className="h-6 w-6 text-[var(--color-accent-solid)]" />
+            </div>
           </div>
         </Card>
 
@@ -76,7 +102,7 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {inProgress.map((course) => (
+          {activeCourses.map((course) => (
             <CourseCard key={course.id} course={course} />
           ))}
         </div>
@@ -155,13 +181,15 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <Target className="h-5 w-5 text-[var(--color-accent-solid)]" />
           <div>
-            <p className="text-[13px] font-medium">Weekly goal on track</p>
+            <p className="text-[13px] font-medium">Today&apos;s goal on track</p>
             <p className="text-xs text-[var(--color-text-tertiary)]">
-              You've studied {weeklyProgress.reduce((a, b) => a + b.minutes, 0)} minutes this week across{" "}
-              {courses.length} courses.
+              {totalCompletedLessons > 0
+                ? `${totalCompletedLessons} lessons completed so far. Keep up the momentum!`
+                : "Select a lesson above to start learning."}
             </p>
           </div>
         </div>
+        <ProgressRing value={goalPct} size={52} strokeWidth={4} label={`${goalPct}%`} />
       </Card>
     </div>
   );

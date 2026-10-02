@@ -31,7 +31,7 @@ export default function SettingsPage() {
       <Card className="p-5">
         <h2 className="text-sm font-medium">AI Tutor</h2>
         <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
-          Connect your own OpenAI API key, or use your workspace's shared key.
+          Connect your own OpenAI API key, or use your workspace&apos;s shared key.
         </p>
         <div className="mt-4">
           <Field label="OpenAI API key" defaultValue="" placeholder="sk-…" type="password" />

@@ -51,8 +51,20 @@ export function AIChatPanel({
           context: { lessonId, lessonTitle, courseTitle },
         }),
       });
-      const data = await res.json();
-      setMessages((m) => [...m, { role: "assistant", content: data.reply as string }]);
+      const data = (await res.json().catch(() => null)) as {
+        reply?: string;
+        message?: string;
+      } | null;
+      // The server returns { reply } on success and { code, message } on any
+      // non-2xx — surface the server's safe message, never crash on a shape we
+      // don't recognize.
+      const assistantReply =
+        data && typeof data.reply === "string"
+          ? data.reply
+          : data && typeof data.message === "string"
+            ? data.message
+            : "The AI tutor couldn't respond right now. Please try again in a moment.";
+      setMessages((m) => [...m, { role: "assistant", content: assistantReply }]);
     } catch {
       setMessages((m) => [
         ...m,

@@ -33,7 +33,7 @@ export default function SearchPage() {
 
       {!results && (
         <p className="mt-6 text-center text-sm text-[var(--color-text-tertiary)]">
-          Start typing to search across everything you've imported.
+          Start typing to search across everything you&apos;ve imported.
         </p>
       )}
 
@@ -44,7 +44,7 @@ export default function SearchPage() {
           <ResultGroup icon={FolderKanban} label="Projects" items={results.projects.map((p) => ({ id: p.id, title: p.title, href: `/project/${p.slug}` }))} />
           <ResultGroup icon={NotebookPen} label="Notes" items={results.notes.map((n) => ({ id: n.id, title: n.lessonTitle, href: "/notes" }))} />
           {Object.values(results).every((r) => r.length === 0) && (
-            <p className="text-center text-sm text-[var(--color-text-tertiary)]">No results for "{query}".</p>
+            <p className="text-center text-sm text-[var(--color-text-tertiary)]">No results for &quot;{query}&quot;.</p>
           )}
         </div>
       )}

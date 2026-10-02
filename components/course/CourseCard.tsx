@@ -1,11 +1,23 @@
 import Link from "next/link";
 import { BookOpen, Clock } from "lucide-react";
-import type { Course } from "@/lib/mock-data";
 import { Card } from "@/components/ui/Card";
 import { DifficultyBadge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/course/ProgressRing";
 
-export function CourseCard({ course }: { course: Course }) {
+export interface CourseCardData {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  repository?: string | null;
+  completion: number;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  tags: string[];
+  estimatedHours: number;
+  moduleIds: string[];
+}
+
+export function CourseCard({ course }: { course: CourseCardData }) {
   return (
     <Link href={`/course/${course.slug}`}>
       <Card className="group h-full p-5 transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-hover)]">

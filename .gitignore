@@ -30,6 +30,17 @@ go.work.sum
 # Environment variables
 .env
 .env.*
+!.env.example
+
+# Next.js build output
+.next
+out
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Test coverage
+coverage
 
 # Database files
 *.db

@@ -4,13 +4,20 @@ import * as React from "react";
 import Link from "next/link";
 import { ChevronDown, CircleCheck, Circle } from "lucide-react";
 import { cn, formatMinutes } from "@/lib/utils";
-import type { Lesson } from "@/lib/mock-data";
 
-interface ModuleWithLessons {
+export interface ModuleLessonItem {
+  id: string;
+  slug: string;
+  title: string;
+  completed: boolean;
+  estimatedMinutes: number;
+}
+
+export interface ModuleWithLessons {
   id: string;
   title: string;
-  completion: number;
-  lessons: Lesson[];
+  completion?: number;
+  lessons: ModuleLessonItem[];
 }
 
 export function ModuleAccordion({ modules }: { modules: ModuleWithLessons[] }) {
@@ -20,6 +27,13 @@ export function ModuleAccordion({ modules }: { modules: ModuleWithLessons[] }) {
     <div className="space-y-2">
       {modules.map((mod, idx) => {
         const open = openId === mod.id;
+        const modCompletion =
+          typeof mod.completion === "number"
+            ? mod.completion
+            : mod.lessons.length > 0
+            ? Math.round((mod.lessons.filter((l) => l.completed).length / mod.lessons.length) * 100)
+            : 0;
+
         return (
           <div key={mod.id} className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)]">
             <button
@@ -33,7 +47,7 @@ export function ModuleAccordion({ modules }: { modules: ModuleWithLessons[] }) {
                 <span className="text-[13.5px] font-medium">{mod.title}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-[var(--color-text-tertiary)]">{mod.completion}%</span>
+                <span className="text-xs text-[var(--color-text-tertiary)]">{modCompletion}%</span>
                 <ChevronDown className={cn("h-4 w-4 text-[var(--color-text-tertiary)] transition-transform", open && "rotate-180")} />
               </div>
             </button>

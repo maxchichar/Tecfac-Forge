@@ -18,7 +18,7 @@ export default function RoadmapPage() {
     <div className="mx-auto max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">Roadmap</h1>
       <p className="mt-1 text-sm text-[var(--color-text-tertiary)]">
-        Your suggested path from fundamentals to deployment, built from the courses you've imported.
+        Your suggested path from fundamentals to deployment, built from the courses you&apos;ve imported.
       </p>
 
       <div className="mt-8 space-y-0">
