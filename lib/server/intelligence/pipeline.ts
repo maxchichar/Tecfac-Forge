@@ -78,6 +78,9 @@ export async function analyzeCourseIntelligence(
   let analysisRunId: string | null = null;
 
   try {
+    const sourceLessons = course.modules.flatMap((mod) => mod.lessons);
+    const revision = sourceLessons[0]?.sourceRevision;
+    const sourceRevision = revision && sourceLessons.every((lesson) => lesson.sourceRevision === revision) ? revision : null;
     // 3. Initialize or update AnalysisRun record to "processing"
     const analysisRun = await prisma.analysisRun.create({
       data: {
@@ -86,7 +89,7 @@ export async function analyzeCourseIntelligence(
         status: "processing",
         version: ANALYSIS_VERSION,
         model: process.env.OPENAI_API_KEY ? (process.env.OPENAI_MODEL || "gpt-4o-mini") : "ast-deterministic",
-        sourceRevision: course.repository || "local",
+        sourceRevision,
       },
     });
     analysisRunId = analysisRun.id;
@@ -99,7 +102,7 @@ export async function analyzeCourseIntelligence(
         markdown: lesson.markdown,
         moduleTitle: mod.title,
         order: lesson.order,
-        filePath: `${lesson.slug}.md`,
+        filePath: lesson.sourcePath ?? `imported-lesson/${lesson.id}`,
       }))
     );
 
@@ -130,6 +133,7 @@ export async function analyzeCourseIntelligence(
     for (const unit of units) {
       unitMap.set(unit.slug, unit.id);
       unitMap.set(unit.title.toLowerCase(), unit.id);
+      if (unit.filePath) unitMap.set(unit.filePath, unit.id);
     }
 
     // 6. Atomic Database Persistence
@@ -160,6 +164,7 @@ export async function analyzeCourseIntelligence(
                   evidence: {
                     create: c.evidence.map((ev) => {
                       const matchedLessonId =
+                        unitMap.get(ev.filePath) ||
                         unitMap.get(ev.filePath.replace(/\.md$/, "")) ||
                         unitMap.get(ev.section.toLowerCase()) ||
                         null;

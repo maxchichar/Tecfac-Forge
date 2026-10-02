@@ -25,11 +25,26 @@ export async function readRequestBodyText(
   request: Request,
   maxBytes: number = MAX_JSON_BODY_BYTES
 ): Promise<BodyTextResult> {
-  const text = await request.text();
-  if (text.length > maxBytes) {
-    return { ok: false, code: "body_too_large", status: 413 };
+  const reader = request.body?.getReader();
+  if (!reader) return { ok: true, text: "" };
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = "";
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > maxBytes) {
+        await reader.cancel();
+        return { ok: false, code: "body_too_large", status: 413 };
+      }
+      text += decoder.decode(chunk.value, { stream: true });
+    }
+    return { ok: true, text: text + decoder.decode() };
+  } finally {
+    reader.releaseLock();
   }
-  return { ok: true, text };
 }
 
 export type JsonParseResult =
@@ -60,6 +75,8 @@ const chatContextSchema = z.object({
   lessonId: boundedString(200, 1, "lessonId"),
   lessonTitle: boundedString(200, 1, "lessonTitle"),
   courseTitle: boundedString(200, 1, "courseTitle"),
+  projectId: boundedString(200).optional(),
+  milestoneId: boundedString(200).optional(),
 }).strict();
 
 const chatRequestSchema = z.object({
@@ -69,7 +86,7 @@ const chatRequestSchema = z.object({
 
 export type ChatRequest = {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
-  context: { lessonId: string; lessonTitle: string; courseTitle: string };
+  context: { lessonId: string; lessonTitle: string; courseTitle: string; projectId?: string; milestoneId?: string };
 };
 
 export type ChatBodyResult =

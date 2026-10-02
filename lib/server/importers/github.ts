@@ -97,6 +97,7 @@ export interface IngestionResult {
   repository: string;
   language: string;
   modules: IngestedModule[];
+  revision: string;
 }
 
 function cleanTitleFromFilename(filename: string): string {
@@ -276,8 +277,16 @@ export async function fetchGitHubRepoData(
   const repoDesc = repoJson.description || `Technical course imported from GitHub repository ${owner}/${repo}.`;
   const language = repoJson.language || "Markdown";
 
+  // Pin every downloaded file and citation to one commit, even if the branch moves.
+  const revisionRes = await fetchFn(`https://api.github.com/repos/${owner}/${repo}/commits/${encodeURIComponent(defaultBranch)}`, {
+    headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!revisionRes.ok) return { ok: false, status: 502, error: "Could not resolve the repository revision." };
+  const revisionJson = await revisionRes.json();
+  if (typeof revisionJson.sha !== "string" || !/^[a-f0-9]{40}$/i.test(revisionJson.sha)) return { ok: false, status: 502, error: "Invalid repository revision." };
+  const revision: string = revisionJson.sha;
   // 2. Fetch Repository Tree
-  const treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`;
+  const treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/${revision}?recursive=1`;
   const treeRes = await fetchFn(treeUrl, {
     headers,
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -323,7 +332,7 @@ export async function fetchGitHubRepoData(
       break;
     }
 
-    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${defaultBranch}/${file.path}`;
+    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${revision}/${file.path.split("/").map(encodeURIComponent).join("/")}`;
     try {
       const fileRes = await fetchFn(rawUrl, {
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -360,6 +369,7 @@ export async function fetchGitHubRepoData(
       repository: `${owner}/${repo}`,
       language,
       modules,
+      revision,
     },
   };
 }
@@ -405,7 +415,7 @@ export async function ingestGitHubRepoToDatabase(
     return repoData;
   }
 
-  const { title, description, repository, language, modules } = repoData.value;
+  const { title, description, repository, language, modules, revision } = repoData.value;
 
   // Generate unique course slug
   const baseSlug = slugify(repo);
@@ -457,6 +467,9 @@ export async function ingestGitHubRepoToDatabase(
                         slug: lessonSlug,
                         title: lesson.title,
                         markdown: lesson.markdown,
+                        sourcePath: lesson.path,
+                        sourceRevision: revision,
+                        sourceUrl: `https://github.com/${owner}/${repo}/blob/${revision}/${lesson.path.split("/").map(encodeURIComponent).join("/")}`,
                         estimatedMinutes: lesson.estimatedMinutes,
                         difficulty: "beginner",
                         order: lesson.order,

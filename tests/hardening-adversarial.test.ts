@@ -64,6 +64,7 @@ describe("P1.5 Hardening: Input Sanitization & Edge Cases", () => {
     };
 
     const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/commits/")) return Promise.resolve(new Response(JSON.stringify({ sha: "a".repeat(40) })));
       if (url.includes("/repos/owner/repo") && !url.includes("/trees/")) {
         return Promise.resolve(new Response(JSON.stringify({
           name: "repo",
@@ -72,7 +73,7 @@ describe("P1.5 Hardening: Input Sanitization & Edge Cases", () => {
           default_branch: "main",
         }), { status: 200 }));
       }
-      if (url.includes("/trees/main")) {
+      if (url.includes("/trees/")) {
         return Promise.resolve(new Response(JSON.stringify(mockTree), { status: 200 }));
       }
       if (url.includes("raw.githubusercontent.com")) {
@@ -99,6 +100,7 @@ describe("P1.5 Hardening: Input Sanitization & Edge Cases", () => {
     };
 
     const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/commits/")) return Promise.resolve(new Response(JSON.stringify({ sha: "a".repeat(40) })));
       if (url.includes("/repos/owner/repo") && !url.includes("/trees/")) {
         return Promise.resolve(new Response(JSON.stringify({
           name: "repo",
@@ -107,7 +109,7 @@ describe("P1.5 Hardening: Input Sanitization & Edge Cases", () => {
           default_branch: "main",
         }), { status: 200 }));
       }
-      if (url.includes("/trees/main")) {
+      if (url.includes("/trees/")) {
         return Promise.resolve(new Response(JSON.stringify(mockTree), { status: 200 }));
       }
       return Promise.resolve(new Response("{}", { status: 404 }));
@@ -177,6 +179,7 @@ describe("P1.5 Hardening: Idempotency & Concurrency Safety", () => {
     });
 
     const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/commits/")) return Promise.resolve(new Response(JSON.stringify({ sha: "a".repeat(40) })));
       if (url.includes("/repos/test-owner/test-repo") && !url.includes("/trees/")) {
         return Promise.resolve(new Response(JSON.stringify({
           name: "test-repo",
@@ -185,7 +188,7 @@ describe("P1.5 Hardening: Idempotency & Concurrency Safety", () => {
           default_branch: "main",
         }), { status: 200 }));
       }
-      if (url.includes("/trees/main")) {
+      if (url.includes("/trees/")) {
         return Promise.resolve(new Response(JSON.stringify({
           tree: [{ path: "README.md", type: "blob" }],
         }), { status: 200 }));

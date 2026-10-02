@@ -1,6 +1,5 @@
 // Prisma schema for Tecfac Forge.
-// Run `npm run db:push` against a real PostgreSQL instance to create these
-// tables, then swap lib/mock-data.ts for real Prisma queries page by page.
+// See docs/project-learning.md for migration and existing-database baseline instructions.
 
 generator client {
   provider = "prisma-client-js"
@@ -33,6 +32,8 @@ model User {
   studySessions StudySession[]
   practiceAttempts PracticeAttempt[]
   conceptMasteries ConceptMastery[]
+  projectSubmissions ProjectSubmission[] @relation("LearnerSubmissions")
+  projectReviews ProjectSubmission[] @relation("SubmissionReviewer")
 }
 
 model Account {
@@ -174,6 +175,9 @@ model Lesson {
   difficulty        Difficulty @default(beginner)
   order             Int
   createdAt         DateTime   @default(now())
+  sourcePath        String?
+  sourceUrl         String?
+  sourceRevision    String?
 
   module          Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   progress        Progress[]
@@ -182,6 +186,7 @@ model Lesson {
   quizzes         Quiz[]
   flashcards      Flashcard[]
   conceptEvidence ConceptEvidence[]
+  projectMilestones ProjectMilestone[]
 
   @@unique([moduleId, slug])
 }
@@ -205,12 +210,57 @@ model Project {
   objectives     String[]
   requirements   String[]
   hints          String[]
+  createdAt      DateTime @default(now())
 
   course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   checklist ChecklistItem[]
   bookmarks Bookmark[]
+  milestones ProjectMilestone[]
 
   @@unique([courseId, slug])
+}
+
+// Project definitions are workspace-shared; all learner evidence is per user.
+model ProjectMilestone {
+  id          String @id @default(cuid())
+  projectId   String
+  title       String
+  brief       String
+  order       Int
+  criteria    String[]
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sources     Lesson[]
+  submissions ProjectSubmission[]
+
+  @@unique([projectId, order])
+}
+
+enum SubmissionStatus {
+  needs_revision
+  submitted
+  self_checked
+  accepted
+}
+
+model ProjectSubmission {
+  id                String @id @default(cuid())
+  milestoneId       String
+  userId            String
+  artifact          String
+  explanation       String
+  verification      String
+  criterionEvidence String[]
+  status            SubmissionStatus
+  feedback          String
+  reviewerId        String?
+  reviewedAt        DateTime?
+  createdAt         DateTime @default(now())
+  milestone         ProjectMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  user              User @relation("LearnerSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer          User? @relation("SubmissionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([userId, milestoneId, createdAt])
+  @@index([milestoneId, status])
 }
 
 model ChecklistItem {
@@ -469,5 +519,4 @@ model ConceptMastery {
   @@index([workspaceId])
   @@index([userId, state])
 }
-
 

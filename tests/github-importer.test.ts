@@ -107,6 +107,7 @@ describe("fetchGitHubRepoData", () => {
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ default_branch: "main", name: "code-only" }), { status: 200 })
       )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sha: "a".repeat(40) })))
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -138,6 +139,7 @@ describe("fetchGitHubRepoData", () => {
           { status: 200 }
         )
       )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sha: "a".repeat(40) })))
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -155,6 +157,10 @@ describe("fetchGitHubRepoData", () => {
     const res = await fetchGitHubRepoData("owner", "test-repo", mockFetch as typeof fetch);
     expect(res.ok).toBe(true);
     if (res.ok) {
+      expect(res.value.revision).toBe("a".repeat(40));
+      expect(mockFetch.mock.calls[2][0]).toContain(`/git/trees/${"a".repeat(40)}`);
+      expect(mockFetch.mock.calls[3][0]).toContain(`/${"a".repeat(40)}/README.md`);
+      expect(res.value.modules[0].lessons[0].path).toBe("README.md");
       expect(res.value.title).toBe("Test Repo");
       expect(res.value.modules.length).toBe(2);
       expect(res.value.modules[0].lessons[0].title).toBe("Welcome to Test Repo");
