@@ -39,3 +39,12 @@ Keep the last known-good Vercel deployment for rollback. These migrations are ad
 ## Verification boundaries
 
 The automated PostgreSQL workflow covers immutable source references, project creation, milestone gates, per-learner isolation, independent reviews, private notes/bookmarks/search, history retention on re-analysis and concurrent quota enforcement. Provider unit checks cover invalid/oversized responses, bounded context, and no retry. A successful Groq smoke call verifies current key/model access, not educational quality; tutor feedback should continue to be evaluated against realistic learner work.
+
+## Release verification — 2026-10-02
+
+- Vercel production: https://tecfac-forge.vercel.app.
+- 173 unit checks and 9 isolated PostgreSQL workflow checks passed; production build, lint, type checking and GitHub Actions passed.
+- Public health, sign-up, session lookup, sign-in and Express Markdown import succeeded on the hosted deployment.
+- Browser-created project persisted with five milestones and a commit-pinned source; a self-checked submission unlocked the next milestone.
+- Hosted note/bookmark/progress writes persisted, and both Groq model tiers returned tutor responses.
+- The browser displayed the actual project network and its 14 connections at desktop and phone widths.

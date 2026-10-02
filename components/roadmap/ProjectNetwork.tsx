@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Focus, List, Minus, Network, Plus, Search } from "lucide-react";
 import { buildProjectGraph } from "@/lib/projects/graph";
@@ -20,6 +20,13 @@ function labelLines(label: string): string[] {
 const SYMBOLS = { available: "○", locked: "◇", needs_revision: "!", submitted: "◷", self_checked: "✓", accepted: "✓✓" };
 
 export function ProjectNetwork({ projects }: { projects: ProjectView[] }) {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 700px)");
+    const update = () => setNarrow(media.matches);
+    update(); media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
   const [filter, setFilter] = useState(projects[0]?.id ?? "all");
   const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -31,6 +38,8 @@ export function ProjectNetwork({ projects }: { projects: ProjectView[] }) {
   const graph = useMemo(() => buildProjectGraph(visible), [visible]);
   const width = visible.length > 1 ? 2200 : 1100;
   const height = Math.max(1, Math.ceil(visible.length / 2)) * 1050;
+  const viewWidth = narrow ? 650 : width;
+  const viewHeight = narrow ? 900 : height;
   const active = graph.nodes.find((n) => n.id === selected);
   const connections = graph.edges.filter((e) => e.from === selected || e.to === selected);
   const neighbors = new Set(connections.flatMap((e) => [e.from, e.to]));
@@ -62,9 +71,9 @@ export function ProjectNetwork({ projects }: { projects: ProjectView[] }) {
           <div className="network-caption"><span className="network-live-dot" /> YOUR LEARNING WEB <span>{graph.nodes.length} nodes · {graph.edges.length} connections</span></div>
           {list ? <div className="network-list">{graph.nodes.map((node) => <button key={node.id} onClick={() => setSelected(node.id)} aria-pressed={selected === node.id}>
             <span style={{ color: COLORS[node.kind] }}>{node.kind}</span><strong>{node.label}</strong>{node.status && <small>{SYMBOLS[node.status]} {STATUS_LABELS[node.status]}</small>}
-          </button>)}</div> : <svg ref={svgRef} className="network-svg" viewBox={`${width / 2 + camera.x - width / camera.zoom / 2} ${height / 2 + camera.y - height / camera.zoom / 2} ${width / camera.zoom} ${height / camera.zoom}`} aria-label="Connected projects, milestones, sources and concepts"
+          </button>)}</div> : <svg ref={svgRef} className="network-svg" viewBox={`${width / 2 + camera.x - viewWidth / camera.zoom / 2} ${height / 2 + camera.y - viewHeight / camera.zoom / 2} ${viewWidth / camera.zoom} ${viewHeight / camera.zoom}`} aria-label="Connected projects, milestones, sources and concepts"
             onPointerDown={(e) => { if ((e.target as Element).closest("[data-node]")) return; drag.current = { x: e.clientX, y: e.clientY, cx: camera.x, cy: camera.y }; e.currentTarget.setPointerCapture(e.pointerId); }}
-            onPointerMove={(e) => { const d = drag.current; if (!d) return; const box = e.currentTarget.getBoundingClientRect(); const scale = Math.max(width / camera.zoom / box.width, height / camera.zoom / box.height); setCamera((c) => ({ ...c, x: d.cx - (e.clientX - d.x) * scale, y: d.cy - (e.clientY - d.y) * scale })); }}
+            onPointerMove={(e) => { const d = drag.current; if (!d) return; const box = e.currentTarget.getBoundingClientRect(); const scale = Math.max(viewWidth / camera.zoom / box.width, viewHeight / camera.zoom / box.height); setCamera((c) => ({ ...c, x: d.cx - (e.clientX - d.x) * scale, y: d.cy - (e.clientY - d.y) * scale })); }}
             onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
             {graph.nodes.filter((n) => n.kind === "project").map((n) => <g key={n.id} aria-hidden="true">{[215, 355, 460].map((r) => <circle key={r} cx={n.x} cy={n.y} r={r} fill="none" stroke="var(--color-border)" strokeDasharray="3 9" opacity=".6" />)}</g>)}
             {graph.edges.map((edge, i) => {
